@@ -1,12 +1,7 @@
-/* griddatabase.h
-
-   The grid database is where we get:
-   - name of each shard
-   - "home" shard for each database
-*/
+// security.h
 
 /**
-*    Copyright (C) 2008 10gen Inc.
+*    Copyright (C) 2009 10gen Inc.
 *
 *    This program is free software: you can redistribute it and/or  modify
 *    it under the terms of the GNU Affero General Public License, version 3,
@@ -23,21 +18,14 @@
 
 #pragma once
 
-#include "shard.h"
+#include <boost/thread/tss.hpp>
 
-class GridDatabase {
+class AuthenticationInfo : boost::noncopyable { 
 public:
-    DBClientWithCommands *conn;
-//    DBClientPaired conn;
-    enum { Port = 27016 }; /* standard port # for a grid db */
-    GridDatabase();
-    ~GridDatabase();
-    string toString() {
-        return conn->toString();
+    AuthenticationInfo() { }
+    ~AuthenticationInfo() { 
+//        cout << "TEMP: auth info was cleaned up ********************************************" << endl;
     }
-
-    /* call at startup, this will initiate connection to the grid db */
-    void init();
 };
-extern GridDatabase gridDatabase;
 
+extern boost::thread_specific_ptr<AuthenticationInfo> authInfo;
