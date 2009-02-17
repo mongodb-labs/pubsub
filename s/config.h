@@ -1,4 +1,4 @@
-// gridconfig.h
+// config.h
 
 /**
 *    Copyright (C) 2008 10gen Inc.
@@ -30,7 +30,10 @@
 namespace mongo {
 
     class Grid;
+    class ConfigServer;
 
+    extern ConfigServer configServer;
+    extern Grid grid;
     /**
        top level grid configuration for an entire database
     */
@@ -53,6 +56,10 @@ namespace mongo {
             if ( _primary.size() == 0 )
                 throw UserException( (string)"no primary server configured for db: " + _name );
             return _primary;
+        }
+        
+        void setPrimary( string s ){
+            _primary = s;
         }
 
         virtual string modelServer();
@@ -78,7 +85,7 @@ namespace mongo {
            gets the config the db.
            will return an empty DBConfig if not in db already
          */
-        DBConfig * getDBConfig( string ns );
+        DBConfig * getDBConfig( string ns , bool create=true);
         
         string pickServerForNewDB();
         
@@ -86,6 +93,31 @@ namespace mongo {
         map<string,DBConfig*> _databases;
     };
 
-    extern Grid grid;
+    class ConfigServer : public DBConfig {
+    public:
 
+        enum { Port = 27016 }; /* standard port # for a grid db */
+        
+        ConfigServer();
+        ~ConfigServer();
+
+        bool ok(){
+            // TODO: check can connect
+            return _primary.size() > 0;
+        }
+        
+        virtual string modelServer(){
+            uassert( "ConfigServer not setup" , _primary.size() );
+            return _primary;
+        }
+
+        /**
+           call at startup, this will initiate connection to the grid db 
+        */
+        bool init( vector<string> configHosts , bool infer );
+
+    private:
+        string getHost( string name , bool withPort );
+    };
+    
 } // namespace mongo
