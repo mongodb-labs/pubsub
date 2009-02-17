@@ -5,7 +5,7 @@
 #include "../stdafx.h"
 #include "../util/message.h"
 #include "../db/dbmessage.h"
-#include "gridconfig.h"
+#include "config.h"
 
 namespace mongo {
     
@@ -27,6 +27,12 @@ namespace mongo {
 
         const char * primaryName(){
             return _config->getPrimary().c_str();
+        }
+
+        string singleServerName(){
+            string s = _config->getServer( getns() );
+            uassert( "sharded!" , s.size() > 0 );
+            return s;
         }
 
         void reply( Message & response ){
