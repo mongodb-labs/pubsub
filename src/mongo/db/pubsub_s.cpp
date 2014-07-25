@@ -38,8 +38,7 @@
 namespace mongo {
     namespace {
 
-        MONGO_INITIALIZER_WITH_PREREQUISITES(SetupPubSubSockets, MONGO_NO_PREREQUISITES)
-                                            (InitializerContext* context) {
+        MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) {
 
             PubSub::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
@@ -69,24 +68,26 @@ namespace mongo {
                 PubSub::extRecvSocket->connect(("tcp://" +
                                                  configPubEndpoint.toString()).c_str());
             } catch (zmq::error_t& e) {
+                // TODO: turn off pubsub if connection here fails
                 log() << "Error connecting pubsub sockets." << causedBy(e) << endl;
             }
 
 
             try {
                 // publishes to client subscribe sockets
-                PubSub::intPubSocket.bind(PubSub::INT_PUBSUB_ENDPOINT);
+                PubSub::intPubSocket.bind(PubSub::kIntPubsubEndpoint);
             } catch (zmq::error_t& e) {
+                // TODO: turn off pubsub if connection here fails
                 log() << "Error binding publish socket." << causedBy(e) << endl;
             }
 
             // proxy incoming messages to internal publisher to be received by clients
-            boost::thread internal_proxy(PubSub::proxy,
-                                         PubSub::extRecvSocket,
-                                         &PubSub::intPubSocket);
+            boost::thread internalProxy(PubSub::proxy,
+                                        PubSub::extRecvSocket,
+                                        &PubSub::intPubSocket);
 
             // clean up subscriptions that have been inactive for at least 10 minutes
-            boost::thread subscription_cleanup(PubSub::subscription_cleanup);
+            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
 
             return Status::OK();
         }

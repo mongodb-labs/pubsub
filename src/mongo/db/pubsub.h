@@ -34,28 +34,29 @@
 #include "mongo/util/concurrency/mutex.h"
 #include "mongo/util/net/hostandport.h"
 
-
 namespace mongo {
+
+    typedef OID SubscriptionId;
 
     class PubSub {
     public:
 
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
-        static OID subscribe(const string& channel);
-        static void poll(std::set<OID>& oids, long timeout,
+        static SubscriptionId subscribe(const string& channel);
+        static void poll(std::set<SubscriptionId>& subscriptionIds, long timeout,
                          BSONObjBuilder& result, BSONObjBuilder& errors);
-        static void unsubscribe(const OID& oid, BSONObjBuilder& errors, bool force=false);
-        static void viewSubscriptions(BSONObj& obj);
+        static void unsubscribe(const SubscriptionId& subscriptionId,
+                                BSONObjBuilder& errors, bool force=false);
 
         // to be included in all files using the client's sub sockets
-        static const char* const INT_PUBSUB_ENDPOINT;
+        static const char* const kIntPubsubEndpoint;
 
         // process-specific (mongod or mongos) initialization of internal communication sockets
         static zmq::socket_t* initSendSocket();
         static zmq::socket_t* initRecvSocket();
-        static void proxy(zmq::socket_t *subscriber, zmq::socket_t *publisher);
-        static void subscription_cleanup();
+        static void proxy(zmq::socket_t* subscriber, zmq::socket_t* publisher);
+        static void subscriptionCleanup();
 
         // zmq sockets for internal communication
         static zmq::context_t zmqContext;
@@ -67,25 +68,35 @@ namespace mongo {
         static void updateReplSetMember(HostAndPort hp);
         static void pruneReplSetMembers();
 
+        struct Message {
+
+        };
+
 
     private:
 
         // contains information about a single subscription
-        struct subInfo {
+        struct SubscriptionInfo {
             zmq::socket_t* sock;
+
             // if currently polling, all other polls return error
-            int activePoll;// : 1;
-            // if currently polling, this bit signifies unsub has been called
-            int shouldUnsub;// : 1;
-            // if no activity on subscription recently, remove subscription
-            int polledRecently;// : 1;
+            int inUse : 1;
+
+            // Set to indicate the subscription is invalid, and should be disposed of at the
+            // next opportune time. This is needed while the subscription is being used and the
+            // cleanup must wait.
+            int shouldUnsub : 1;
+
+            // Signifies that the subscription has been polled recently and is therefore
+            // still alive. Used to clean up subscriptions that are abandoned
+            int polledRecently : 1;
         };
 
         // max poll length so we can check if unsubscribe has been called
         static const long maxPollInterval;
 
-        // data structure mapping sub_id to subscription info
-        static std::map<OID, subInfo*> subscriptions;
+        // data structure mapping SubscriptionId to subscription info
+        static std::map<SubscriptionId, SubscriptionInfo*> subscriptions;
 
         // for locking around the subscriptions map in subscribe, poll, and unsubscribe
         static SimpleMutex mapMutex;
@@ -97,14 +108,26 @@ namespace mongo {
         // only used by mongods in a replica set (not mongods as configs)
         static std::map<HostAndPort, bool> rsMembers;
 
-        static void endCurrentPolls(std::vector<std::pair<OID, subInfo*> >& subs);
+        // Helper method to end all polls on subscriptions passed in. This is used in the case
+        // that poll() gets cut off by an error or by hitting the max poll timeout.
+        static void endCurrentPolls(std::vector<std::pair<SubscriptionId,
+                                                          SubscriptionInfo*> >& subs);
 
-        static void getSubscriptions(std::set<OID>& oids,
+        // Gets the SubscriptionInfo object for each SubscriptionId passed in. Fills in the
+        // subs vector with the subscription info and the items vector with zmq::pollitem_t's
+        // that correspond to those subscriptions for polling. In the event of an error finding
+        // subscriptions, this method inserts an error message in the errors map for the given
+        // SubscriptionId.
+        static void getSubscriptions(std::set<SubscriptionId>& subscriptionIds,
                                      std::vector<zmq::pollitem_t>& items,
-                                     std::vector<std::pair<OID, subInfo*> >& subs,
+                                     std::vector<std::pair<SubscriptionId,
+                                                           SubscriptionInfo*> >& subs,
                                      BSONObjBuilder& errors);
 
-        static BSONObj recvMessages(std::vector<std::pair<OID, subInfo*> >& subs);
+        // This method receives messages on all subscriptions passed in. In the event of an error,
+        // this method inserts an error message in the errors map for the given SubscriptionId.
+        static BSONObj recvMessages(std::vector<std::pair<SubscriptionId,
+                                                          SubscriptionInfo*> >& subs);
     };
 
 }  // namespace mongo

@@ -7,7 +7,7 @@ assert(load('jstests/libs/pubsub.js'));
  **/
 
 // start a replica set with 3 nodes
-var rs = new ReplSetTest({name: 'pubsub', nodes: 3});
+var rs = new ReplSetTest({name: 'pubsubReplBasic', nodes: 3});
 var nodes = rs.startSet();
 rs.initiate();
 

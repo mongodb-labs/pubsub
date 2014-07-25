@@ -1,7 +1,7 @@
 /**
  *    Copyright (C) 2014 MongoDB Inc.
  *
- *    This program is free software: you can redistribute it and/or  modify
+ *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Affero General Public License, version 3,
  *    as published by the Free Software Foundation.
  *
@@ -41,6 +41,58 @@
 
 namespace mongo {
 
+    namespace {
+
+        // constants for field names
+        const std::string kSubscriptionId = "subscriptionId";
+        const std::string kPublishField = "publish";
+        const std::string kMessageField = "message";
+        const std::string kSubscribeField = "subscribe";
+        const std::string kPollField = "poll";
+        const std::string kTimeoutField = "timeout";
+        const std::string kErrorField = "errors";
+        const std::string kUnsubscribeField = "unsubscribe";
+
+        // Helper method to validate single or array of SubscriptionId arguments
+        void validate(BSONElement& element, std::set<OID>& oids) {
+            // ensure that the subscriptionId argument is a SubscriptionId or array
+            uassert(18543,
+                    mongoutils::str::stream() << "The subscriptionId argument must be "
+                                              << "an ObjectID or Array but was a "
+                                              << typeName(element.type()),
+                    element.type() == jstOID || element.type() == mongo::Array);
+
+            if (element.type() == jstOID) {
+                oids.insert(element.OID());
+            } else {
+                std::vector<BSONElement> elements = element.Array();
+                for (std::vector<BSONElement>::iterator it = elements.begin();
+                     it != elements.end();
+                     it++) {
+                    // ensure that each member of the array is a SubscriptionId
+                    uassert(18544,
+                            mongoutils::str::stream() << "Each subscriptionId in the "
+                                                      << "subscriptionId array must be an "
+                                                      << "ObjectID but found a "
+                                                      << typeName(it->type()),
+                            it->type() == jstOID);
+                    oids.insert(it->OID());
+                }
+            }
+        }
+
+    }
+
+
+    /**
+     * Command for publishing to self and other nodes in your replica set or cluster.
+     *
+     * Format:
+     * {
+     *    publish: <string>, // name of channel to publish to.
+     *    message: <Object>  // the body of the message to publish. Can have any format desired.
+     * }
+     */
     class PublishCommand : public Command {
     public:
         PublishCommand() : Command("publish") {}
@@ -55,27 +107,23 @@ namespace mongo {
                                            const BSONObj& cmdObj,
                                            std::vector<Privilege>* out) {
             ActionSet actions;
+            // TODO: get a real action type
             actions.addAction(ActionType::find);
             out->push_back(Privilege(parseResourcePattern(dbname, cmdObj), actions));
         }
 
         virtual void help(stringstream &help) const {
-            help << "{ publish : 1 , channel : 'string', message : {} }";
+            help << "{ publish : <channel>, message : {} }";
         }
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            // ensure that channel argument exists
-            uassert(18551,
-                    mongoutils::str::stream() << "The publish command requires a channel argument.",
-                    cmdObj.hasField("channel"));
-
-            BSONElement channelElem = cmdObj["channel"];
+            BSONElement channelElem = cmdObj[kPublishField];
 
             // ensure that the channel is a string
             uassert(18527,
-                    mongoutils::str::stream() << "The channel argument to the publish "
+                    mongoutils::str::stream() << "The channel passed to the publish "
                                               << "command must be a string but was a "
                                               << typeName(channelElem.type()),
                     channelElem.type() == mongo::String);
@@ -84,9 +132,9 @@ namespace mongo {
             // ensure that message argument exists
             uassert(18552,
                     mongoutils::str::stream() << "The publish command requires a message argument.",
-                    cmdObj.hasField("message"));
+                    cmdObj.hasField(kMessageField));
 
-            BSONElement messageElem = cmdObj["message"];
+            BSONElement messageElem = cmdObj[kMessageField];
 
             // ensure that the message is a document
             uassert(18528,
@@ -108,6 +156,20 @@ namespace mongo {
     } publishCmd;
 
 
+    /**
+     * Command for subscribing to messages on a given channel.
+     *
+     * Format:
+     * {
+     *    subscribe: <string> // name of channel to subscribe to.
+     * }
+     *
+     * Return value:
+     * {
+     *    subscriptionId: <ObjectId> // ID of subscription created
+     * }
+     *
+     */
     class SubscribeCommand : public Command {
     public:
         SubscribeCommand() : Command("subscribe") {}
@@ -122,27 +184,22 @@ namespace mongo {
                                            const BSONObj& cmdObj,
                                            std::vector<Privilege>* out) {
             ActionSet actions;
+            // TODO: get a real action type
             actions.addAction(ActionType::find);
             out->push_back(Privilege(parseResourcePattern(dbname, cmdObj), actions));
         }
 
         virtual void help(stringstream &help) const {
-            help << "{ subscribe : 1, channel : 'string' }";
+            help << "{ subscribe : <channel> }";
         }
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            // ensure that channel argument exists
-            uassert(18553,
-                    mongoutils::str::stream() << "The subscribe command requires "
-                                              << "a channel argument.",
-                    cmdObj.hasField("channel"));
-
-            BSONElement channelElem = cmdObj["channel"];
+            BSONElement channelElem = cmdObj[kSubscribeField];
 
             // ensure that the channel is a string
-            uassert(18531, mongoutils::str::stream() << "The channel argument to the subscribe "
+            uassert(18531, mongoutils::str::stream() << "The channel passed to the subscribe "
                                                      << "command must be a string but was a "
                                                      << typeName(channelElem.type()),
                     channelElem.type() == mongo::String);
@@ -152,7 +209,7 @@ namespace mongo {
             // TODO: add secure access to this channel?
             // perhaps return an <oid, key> pair?
             OID oid = PubSub::subscribe(channel);
-            result.append("sub_id" , oid);
+            result.append(kSubscriptionId, oid);
 
             return true;
         }
@@ -160,6 +217,33 @@ namespace mongo {
     } subscribeCmd;
 
 
+    /**
+     * Command for polling on a single or multiple subscriptions.
+     *
+     * Format:
+     * {
+     *    subscriptionId: <ObjectId | Array>, // ID or IDs of subscriptions to poll on
+     *    [timeout]: <Number>  // number of milliseconds to wait if there are no new messages.
+     * }
+     *
+     * Return value:
+     * {
+     *    messages: <Object>, // messages found. Always returned, even if empty. Has format:
+     *        {
+     *           subscriptionId: <Array>, // key is ID, value is array of message objects
+     *           subscriptionId2: <Array>,
+     *           ...
+     *        }
+     *    errors: <Object>, // returned if and only if any errors occurred. Has format:
+     *        {
+     *           subscriptionId: <string>, // key is ID of channel, value is error string
+     *           subscriptionId2: <string>,
+     *           ...
+     *        }
+     *    millisPolled: <Integer>, // number of milliseconds command waited before finding messages.
+     *    [pollAgain]: <Bool> // returned as true only if poll gets no messages and times out.
+     * }
+     */
     class PollCommand : public Command {
     public:
         PollCommand() : Command("poll") {}
@@ -174,80 +258,74 @@ namespace mongo {
                                            const BSONObj& cmdObj,
                                            std::vector<Privilege>* out) {
             ActionSet actions;
+            // TODO: get a real action type
             actions.addAction(ActionType::find);
             out->push_back(Privilege(parseResourcePattern(dbname, cmdObj), actions));
         }
 
         virtual void help(stringstream &help) const {
-            help << "{ poll : 1 , sub_id : ObjectID, timeout : <integer milliseconds> }";
+            help << "{ poll : <subscriptionId(s)>, timeout : <integer milliseconds> }";
         }
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            // ensure that sub_id argument exists
-            uassert(18550,
-                    mongoutils::str::stream() << "The poll command requires either an ObjectID "
-                                              << "or array of ObjectIDs as the sub_id argument.",
-                    cmdObj.hasField("sub_id"));
-
-            BSONElement oidElement = cmdObj["sub_id"];
+            BSONElement oidElement = cmdObj[kPollField];
 
             std::set<OID> oids;
             validate(oidElement, oids);
 
             // if no timeout is specified, default is to return from the poll without waiting
             long timeout = 0L;
-            if (cmdObj.hasField("timeout")) {
-                BSONElement timeoutElem = cmdObj["timeout"];
+            BSONElement timeoutElem = cmdObj[kTimeoutField];
+            if (!timeoutElem.eoo()) {
                 uassert(18535,
                         mongoutils::str::stream() << "The timeout argument must be an integer "
                                                   << "but was a "
                                                   << typeName(timeoutElem.type()),
-                        timeoutElem.type() == NumberDouble || timeoutElem.type() == NumberLong);
-                timeout = timeoutElem.numberLong();
+                        timeoutElem.type() == NumberDouble ||
+                        timeoutElem.type() == NumberLong ||
+                        timeoutElem.type() == NumberInt);
+
+                if (timeoutElem.type() == NumberDouble) {
+                    timeout = std::floor(timeoutElem.numberDouble());
+                } else if (timeoutElem.type() == NumberLong) {
+                    timeout = timeoutElem.numberLong();
+                } else {
+                    timeout = timeoutElem.numberInt();
+                }
             }
 
             BSONObjBuilder errors;
             PubSub::poll(oids, timeout, result, errors);
 
             if (errors.asTempObj().nFields() > 0)
-                result.append("errors", errors.obj());
+                result.append(kErrorField, errors.obj());
 
             return true;
-        }
-
-    private:
-        void validate(BSONElement& element, std::set<OID>& oids) {
-
-            // ensure that the sub_id argument is an ObjectID or array
-            uassert(18543,
-                    mongoutils::str::stream() << "The sub_id argument to the poll command "
-                                              << "must be an ObjectID or Array but was a "
-                                              << typeName(element.type()),
-                    element.type() == jstOID || element.type() == mongo::Array);
-
-            if (element.type() == jstOID) {
-                oids.insert(element.OID());
-            } else {
-                std::vector<BSONElement> elements = element.Array();
-                for (std::vector<BSONElement>::iterator it = elements.begin();
-                     it != elements.end();
-                     it++) {
-                    // ensure that each member of the array is an ObjectID
-                    uassert(18544,
-                            mongoutils::str::stream() << "Each sub_id in the sub_id array must be "
-                                                      << "an ObjectID but found a "
-                                                      << typeName(it->type()),
-                            it->type() == jstOID);
-                    oids.insert(it->OID());
-                }
-            }
         }
 
     } pollCmd;
 
 
+    /**
+     * Command for unsubscribing from a previously registered subscription.
+     *
+     * Format:
+     * {
+     *    unsubscribe: <ObjectId | Array>, // ID(s) of channel(s) to unsubscribe from.
+     * }
+     *
+     * Return value:
+     * {
+     *    [errors]: <Object> // if any subscriptions can't be found, returns Object with format:
+     *        {
+     *           subscriptionId: <string>, // key is subscription ID, value is error message
+     *           subscriptionId2: <string>,
+     *           ...
+     *        }
+     * }
+     */
     class UnsubscribeCommand : public Command {
     public:
         UnsubscribeCommand() : Command("unsubscribe") {}
@@ -262,25 +340,19 @@ namespace mongo {
                                            const BSONObj& cmdObj,
                                            std::vector<Privilege>* out) {
             ActionSet actions;
+            // TODO: get a real action type
             actions.addAction(ActionType::find);
             out->push_back(Privilege(parseResourcePattern(dbname, cmdObj), actions));
         }
 
         virtual void help(stringstream &help) const {
-            help << "{ unsubscribe : 1, sub_id : ObjectId }";
+            help << "{ unsubscribe : <subscriptionId(s)> }";
         }
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            // ensure that sub_id argument exists
-            uassert(18554,
-                    mongoutils::str::stream() << "The unsubcribe command requires either an "
-                                              << "ObjectID or array of ObjectIDs as the sub_id "
-                                              << "argument.",
-                                              cmdObj.hasField("sub_id"));
-
-            BSONElement oidElement = cmdObj["sub_id"];
+            BSONElement oidElement = cmdObj[kUnsubscribeField];
             std::set<OID> oids;
             validate(oidElement, oids);
 
@@ -291,71 +363,11 @@ namespace mongo {
             }
 
             if (errors.asTempObj().nFields() > 0)
-                result.append("errors", errors.obj());
+                result.append(kErrorField, errors.obj());
 
             return true;
-        }
-
-    private:
-        void validate(BSONElement& element, std::set<OID>& oids) {
-            // ensure that the sub_id argument is an ObjectID or array
-            uassert(18532,
-                    mongoutils::str::stream() << "The sub_id argument to the unsubscribe command "
-                                              << "must be an ObjectID or Array but was a "
-                                              << typeName(element.type()),
-                    element.type() == jstOID || element.type() == mongo::Array);
-
-            if (element.type() == jstOID) {
-                oids.insert(element.OID());
-            } else {
-                std::vector<BSONElement> elements = element.Array();
-                for (std::vector<BSONElement>::iterator it = elements.begin();
-                     it != elements.end();
-                     it++) {
-                    // ensure that each member of the array is an ObjectID
-                    uassert(18545,
-                            mongoutils::str::stream() << "Each array member must be an "
-                                                      << "ObjectID but found a "
-                                                      << typeName(it->type()),
-                            it->type() == jstOID);
-                    oids.insert(it->OID());
-                }
-            }
         }
 
     } unsubscribeCmd;
-
-    class ViewSubscriptionsCommand : public Command {
-    public:
-        ViewSubscriptionsCommand() : Command("viewSubscriptions") {}
-
-        virtual bool slaveOk() const { return true; }
-        virtual bool slaveOverrideOk() const { return true; }
-        virtual bool isWriteCommandForConfigServer() const { return false; }
-
-        virtual LockType locktype() const { return NONE; }
-
-        virtual void addRequiredPrivileges(const std::string& dbname,
-                                           const BSONObj& cmdObj,
-                                           std::vector<Privilege>* out) {
-            ActionSet actions;
-            actions.addAction(ActionType::find);
-            out->push_back(Privilege(parseResourcePattern(dbname, cmdObj), actions));
-        }
-
-        virtual void help(stringstream &help) const {
-            help << "{ viewSubscriptions : 1 }";
-        }
-
-        bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
-                 BSONObjBuilder& result, bool fromRepl) {
-
-            BSONObj subs;
-            PubSub::viewSubscriptions(subs);
-            result.append("subs", subs);
-            return true;
-        }
-
-    } viewSubscriptionsCmd;
 
 }  // namespace mongo

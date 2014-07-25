@@ -3,31 +3,34 @@ ps = function() { return "try ps.help()"; }
 ps._allSubscriptions = [];
 
 ps.help = function() {
-    print("\tps.publish(channel, message)         publishes message to given channel");
-    print("\tps.subscribe(channel)                <ObjectId> subscribes to channel");
-    print("\tps.poll(id, [timeout])               checks for messages on the subscription id given, waiting for <timeout> msecs if specified");
-    print("\tps.pollAll([timeout])                polls for messages on all subscriptions issed by this shell");
-    print("\tps.unsubscribe(id)                   unsubscribes from subscription id given");
-    print("\tps.unsubscribeAll()                  unsubscribes from all subscriptions issued by this shell");
+    print("\tps.publish(channel, message)    publishes message to given channel");
+    print("\tps.subscribe(channel)           <ObjectId> subscribes to channel");
+    print("\tps.poll(id, [timeout])          checks for messages on the subscription id " +
+                                             "given, waiting for <timeout> msecs if specified");
+    print("\tps.pollAll([timeout])           polls for messages on all subscriptions issed by " +
+                                             "this shell");
+    print("\tps.unsubscribe(id)              unsubscribes from subscription id given");
+    print("\tps.unsubscribeAll()             unsubscribes from all subscriptions issued by " +
+                                             "this shell");
 }
 
 ps.publish = function(channel, message) {
     channelType = typeof channel;
     if (channelType != "string")
-        throw Error("The channel argument to the publish command must be a " +
-                    "string but was a " + channelType);
+        throw Error("The channel argument to the publish command must be a string but was a " +
+                     channelType);
     messageType = typeof message;
     if (messageType != "object")
-        throw Error("The message argument to the publish command must be a " +
-                    "document but was a " + messageType);
+        throw Error("The message argument to the publish command must be a document but was a " +
+                     messageType);
     return assert.commandWorked(db.runCommand({ publish: 1, channel: channel, message: message }));
 }
 
 ps.subscribe = function(channel) {
     channelType = typeof channel;
     if (channelType != "string")
-        throw Error("The channel argument to the subscribe command must be a " +
-                    "string but was a " + channelType);
+        throw Error("The channel argument to the subscribe command must be a string but was a " +
+                     channelType);
     var sub_id = assert.commandWorked(db.runCommand({ subscribe: 1, channel: channel }))['sub_id'];
     this._allSubscriptions.push(sub_id);
     return sub_id;

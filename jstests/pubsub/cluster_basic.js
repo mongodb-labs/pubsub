@@ -2,7 +2,7 @@
 assert(load('jstests/libs/pubsub.js'));
 
 // start a cluster with 3 mongoses
-var st = new ShardingTest({name : 'pubsub', mongos : 3, config : 3});
+var st = new ShardingTest({name: 'pubsubClusterBasic', mongos: 3, config: 3});
 
 var db0 = st.s0.getDB('test');
 var db1 = st.s1.getDB('test');

@@ -38,8 +38,7 @@
 namespace mongo {
     namespace {
 
-        MONGO_INITIALIZER(SetupPubSubSockets)
-                                            (InitializerContext* context) {
+        MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) {
 
             // TODO: allow users to set pubsub ports on startup
             const int port = serverGlobalParams.port;
@@ -60,52 +59,54 @@ namespace mongo {
 
                 try {
                     // listen (pull) from each mongos in the cluster
-                    const std::string EXT_PULL_ENDPOINT = str::stream() << "tcp://*:"
-                                                                        << (port + 1234);
-                    PubSub::extRecvSocket->bind(EXT_PULL_ENDPOINT.c_str());
+                    const std::string kExtPullEndpoint = str::stream() << "tcp://*:"
+                                                                       << (port + 1234);
+                    PubSub::extRecvSocket->bind(kExtPullEndpoint.c_str());
 
                     // publish to all mongoses in the cluster
-                    const std::string EXT_PUB_ENDPOINT = str::stream() << "tcp://*:"
-                                                                       << (port + 2345);
-                    PubSub::extSendSocket->bind(EXT_PUB_ENDPOINT.c_str());
+                    const std::string kExtPubEndpoint = str::stream() << "tcp://*:"
+                                                                      << (port + 2345);
+                    PubSub::extSendSocket->bind(kExtPubEndpoint.c_str());
                 } catch (zmq::error_t& e) {
+                    // TODO: turn off pubsub if connection here fails
                     log() << "Error initializing pubsub sockets." << causedBy(e) << endl;
                 }
 
                 // automatically proxy messages from PULL endpoint to PUB endpoint
-                boost::thread internal_proxy(PubSub::proxy,
-                                             PubSub::extRecvSocket,
-                                             PubSub::extSendSocket);
+                boost::thread internalProxy(PubSub::proxy,
+                                            PubSub::extRecvSocket,
+                                            PubSub::extSendSocket);
             } else {
                 // each mongod in a replica set publishes its messages
                 // to all other mongods in its replica set
 
                 try {
                     // listen (subscribe) to all mongods in the replset
-                    const std::string EXT_SUB_ENDPOINT = str::stream() << "tcp://*:"
-                                                                       << (port + 1234);
-                    PubSub::extRecvSocket->bind(EXT_SUB_ENDPOINT.c_str());
+                    const std::string kExtSubEndpoint = str::stream() << "tcp://*:"
+                                                                      << (port + 1234);
+                    PubSub::extRecvSocket->bind(kExtSubEndpoint.c_str());
 
                     // connect to own sub socket to publish messages to self
                     // (other mongods in replset connect to our sub socket when they join the set)
-                    const std::string EXT_PUB_ENDPOINT = str::stream() << "tcp://localhost:"
-                                                                       << (port + 1234);
-                    PubSub::extSendSocket->connect(EXT_PUB_ENDPOINT.c_str());
+                    const std::string kExtPubEndpoint = str::stream() << "tcp://localhost:"
+                                                                      << (port + 1234);
+                    PubSub::extSendSocket->connect(kExtPubEndpoint.c_str());
 
                     // automatically proxy messages from SUB endpoint to client sub sockets
-                    PubSub::intPubSocket.bind(PubSub::INT_PUBSUB_ENDPOINT);
+                    PubSub::intPubSocket.bind(PubSub::kIntPubsubEndpoint);
                 } catch (zmq::error_t& e) {
+                    // TODO: turn off pubsub if connection here fails
                     log() << "Could not initialize pubsub sockets: " << causedBy(e) << endl;
                 }
 
                 // proxy incoming messages to internal publisher to be received by clients
-                boost::thread internal_proxy(PubSub::proxy,
-                                             PubSub::extRecvSocket,
-                                             &PubSub::intPubSocket);
+                boost::thread internalProxy(PubSub::proxy,
+                                            PubSub::extRecvSocket,
+                                            &PubSub::intPubSocket);
             }
 
             // clean up subscriptions that have been inactive for at least 10 minutes
-            boost::thread subscription_cleanup(PubSub::subscription_cleanup);
+            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
 
             return Status::OK();
         }
