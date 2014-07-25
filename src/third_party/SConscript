@@ -99,3 +99,16 @@ if solaris:
     env.Library('shim_tz', ['shim_tz.cpp'], LIBDEPS=['tz/tz'])
 else:
     env.Library('shim_tz', ['shim_tz.cpp'], LIBDEPS=[])
+
+# if use_system_version_of_library('zeromq'):
+#     print 'External ZMQ not currently supported.'
+#     Exit(1)
+# else:
+if True:
+    env.Append(CPPPATH='$BUILD_DIR/third_party/zeromq-4.0.4/include')
+    env.SConscript('zeromq-4.0.4/SConscript')
+    env.Library('shim_zeromq', ['shim_zeromq.cpp'],
+                LIBDEPS=['zeromq-4.0.4/zmq'])
+
+
+

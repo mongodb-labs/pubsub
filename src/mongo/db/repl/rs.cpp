@@ -34,6 +34,7 @@
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/auth/authorization_session.h"
 #include "mongo/db/client.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/dbhelpers.h"
 #include "mongo/db/instance.h"
 #include "mongo/db/repl/bgsync.h"
@@ -49,7 +50,7 @@
 using namespace std;
 
 namespace mongo {
-    
+
     using namespace bson;
 
 #ifdef MONGO_PLATFORM_64
@@ -330,7 +331,7 @@ namespace {
 
     void ReplSetImpl::_fillIsMaster(BSONObjBuilder& b) {
         lock lk(this);
-        
+
         const StateBox::SP sp = box.get();
         bool isp = sp.state.primary();
         b.append("setName", name());
@@ -597,12 +598,12 @@ namespace {
             unsigned nfound = 0;
             int me = 0;
             for( vector<ReplSetConfig::MemberCfg>::iterator i = c.members.begin(); i != c.members.end(); i++ ) {
-                
+
                 ReplSetConfig::MemberCfg& m = *i;
                 if( m.h.isSelf() ) {
                     me++;
                 }
-                
+
                 if( reconf ) {
                     const Member *old = findById(m._id);
                     if( old ) {
@@ -619,7 +620,14 @@ namespace {
                         newOnes.push_back(&m);
                     }
                 }
+
+                // mark member as part of replSet for pubsub and add connection if necessary
+                PubSubSendSocket::updateReplSetMember(i->h);
             }
+
+            // disconnect from pubsub members that are no longer part of replSet
+            PubSubSendSocket::pruneReplSetMembers();
+
             if( me == 0 ) { // we're not in the config -- we must have been removed
                 if (state().shunned()) {
                     // already took note of our ejection from the set
@@ -643,7 +651,7 @@ namespace {
                 log() << c.toString() << rsLog;
 
                 loadConfig();  // redo config from scratch
-                return false; 
+                return false;
             }
             uassert( 13302, "replSet error self appears twice in the repl set configuration", me<=1 );
 
@@ -728,7 +736,7 @@ namespace {
         _members.orphanAll();
 
         endOldHealthTasks();
-        
+
         // Clear out our memory of who might have been syncing from us.
         // Any incoming handshake connections after this point will be newly registered.
         ghost->clearCache();
@@ -835,8 +843,8 @@ namespace {
                 {
                     scoped_lock lck( replSettings.discoveredSeeds_mx );
                     if( replSettings.discoveredSeeds.size() > 0 ) {
-                        for (set<string>::iterator i = replSettings.discoveredSeeds.begin(); 
-                             i != replSettings.discoveredSeeds.end(); 
+                        for (set<string>::iterator i = replSettings.discoveredSeeds.begin();
+                             i != replSettings.discoveredSeeds.end();
                              i++) {
                             try {
                                 configs.mutableVector().push_back( ReplSetConfig::make(HostAndPort(*i)) );
