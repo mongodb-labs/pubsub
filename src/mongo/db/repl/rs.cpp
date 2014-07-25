@@ -34,6 +34,7 @@
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/auth/authorization_session.h"
 #include "mongo/db/client.h"
+#include "mongo/db/pubsub.h"
 #include "mongo/db/dbhelpers.h"
 #include "mongo/db/instance.h"
 #include "mongo/db/repl/bgsync.h"
@@ -49,7 +50,7 @@
 using namespace std;
 
 namespace mongo {
-    
+
     using namespace bson;
 
 #ifdef MONGO_PLATFORM_64
@@ -619,7 +620,14 @@ namespace {
                         newOnes.push_back(&m);
                     }
                 }
+
+                // mark member as part of replSet for pubsub and add connection if necessary
+                PubSub::updateReplSetMember(i->h);
             }
+
+            // disconnect from pubsub members that are no longer part of replSet
+            PubSub::pruneReplSetMembers();
+
             if( me == 0 ) { // we're not in the config -- we must have been removed
                 if (state().shunned()) {
                     // already took note of our ejection from the set

@@ -254,27 +254,29 @@ namespace mongo {
     }
 
     namespace JSFiles {
+        extern const JSFile bulk_api;
         extern const JSFile collection;
         extern const JSFile db;
         extern const JSFile mongo;
         extern const JSFile mr;
+        extern const JSFile pubsub;
         extern const JSFile query;
         extern const JSFile upgrade_check;
         extern const JSFile utils;
         extern const JSFile utils_sh;
-        extern const JSFile bulk_api;
     }
 
     void Scope::execCoreFiles() {
-        execSetup(JSFiles::utils);
-        execSetup(JSFiles::utils_sh);
+        execSetup(JSFiles::bulk_api);
+        execSetup(JSFiles::collection);
         execSetup(JSFiles::db);
         execSetup(JSFiles::mongo);
         execSetup(JSFiles::mr);
+        execSetup(JSFiles::pubsub);
         execSetup(JSFiles::query);
-        execSetup(JSFiles::bulk_api);
-        execSetup(JSFiles::collection);
         execSetup(JSFiles::upgrade_check);
+        execSetup(JSFiles::utils);
+        execSetup(JSFiles::utils_sh);
     }
 
     /** install BenchRunner suite */

@@ -1427,5 +1427,9 @@ DB.prototype.unsetWriteConcern = function() {
     delete this._writeConcern;
 };
 
+DB.prototype.PS = function() {
+    return new PS(this);
+};
+
 
 }());
