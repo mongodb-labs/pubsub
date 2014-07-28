@@ -52,8 +52,10 @@ namespace mongo {
         // to be included in all files using the client's sub sockets
         static const char* const kIntPubsubEndpoint;
 
+
+
         // process-specific (mongod or mongos) initialization of internal communication sockets
-        static zmq::socket_t* initSendSocket();
+        static zmq::socket_t* initSendSocket(); 
         static zmq::socket_t* initRecvSocket();
         static void proxy(zmq::socket_t* subscriber, zmq::socket_t* publisher);
         static void subscriptionCleanup();
@@ -61,12 +63,7 @@ namespace mongo {
         // zmq sockets for internal communication
         static zmq::context_t zmqContext;
         static zmq::socket_t intPubSocket;
-        static zmq::socket_t* extSendSocket;
         static zmq::socket_t* extRecvSocket;
-
-        // connections modifiers
-        static void updateReplSetMember(HostAndPort hp);
-        static void pruneReplSetMembers();
 
         struct Message {
 
@@ -101,12 +98,8 @@ namespace mongo {
         // for locking around the subscriptions map in subscribe, poll, and unsubscribe
         static SimpleMutex mapMutex;
 
-        // for locking around publish, which does not affect the subscriptions map
+        // for locking around publish, because it uses a non-thread-safe zmq socket
         static SimpleMutex sendMutex;
-
-        // list of other replica set members we are connected to for pubsub
-        // only used by mongods in a replica set (not mongods as configs)
-        static std::map<HostAndPort, bool> rsMembers;
 
         // Helper method to end all polls on subscriptions passed in. This is used in the case
         // that poll() gets cut off by an error or by hitting the max poll timeout.

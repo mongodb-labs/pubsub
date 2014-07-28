@@ -34,18 +34,18 @@
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/auth/authorization_session.h"
 #include "mongo/db/client.h"
-#include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/dbhelpers.h"
 #include "mongo/db/instance.h"
 #include "mongo/db/repl/bgsync.h"
 #include "mongo/db/repl/connections.h"
 #include "mongo/db/repl/oplog.h"
 #include "mongo/db/repl/replication_server_status.h"  // replSettings
-#include "mongo/db/repl/rs.h"
 #include "mongo/db/server_parameters.h"
 #include "mongo/platform/bits.h"
 #include "mongo/s/d_logic.h"
 #include "mongo/util/net/sock.h"
+#include "mongo/db/repl/rs.h"
 
 using namespace std;
 
@@ -622,11 +622,11 @@ namespace {
                 }
 
                 // mark member as part of replSet for pubsub and add connection if necessary
-                PubSub::updateReplSetMember(i->h);
+                PubSubSendSocket::updateReplSetMember(i->h);
             }
 
             // disconnect from pubsub members that are no longer part of replSet
-            PubSub::pruneReplSetMembers();
+            PubSubSendSocket::pruneReplSetMembers();
 
             if( me == 0 ) { // we're not in the config -- we must have been removed
                 if (state().shunned()) {

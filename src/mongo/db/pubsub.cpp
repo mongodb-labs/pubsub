@@ -29,6 +29,7 @@
 #include "mongo/pch.h"
 
 #include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 
 #include <zmq.hpp>
 
@@ -36,6 +37,7 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
+
 
 namespace mongo {
 
@@ -64,7 +66,6 @@ namespace mongo {
 
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
-    zmq::socket_t* PubSub::extSendSocket;
     zmq::socket_t* PubSub::extRecvSocket;
 
     zmq::socket_t* PubSub::initSendSocket() {
@@ -149,8 +150,6 @@ namespace mongo {
     std::map<SubscriptionId, PubSub::SubscriptionInfo*> PubSub::subscriptions =
                                             std::map<SubscriptionId, PubSub::SubscriptionInfo*>();
 
-    std::map<HostAndPort, bool> PubSub::rsMembers;
-
     const long PubSub::maxPollInterval = 100; // milliseconds
 
     SimpleMutex PubSub::mapMutex("subsmap");
@@ -159,11 +158,12 @@ namespace mongo {
     // Outwards-facing interface for PubSub across replica sets and sharded clusters
 
     bool PubSub::publish(const std::string& channel, const BSONObj& message) {
+
         try {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
-            PubSub::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-            PubSub::extSendSocket->send(message.objdata(), message.objsize());
+            PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
+            PubSubSendSocket::extSendSocket->send(message.objdata(), message.objsize());
         } catch (zmq::error_t& e) {
             log() << "ZeroMQ failed to publish to pub socket." << causedBy(e) << endl;
             return false;
@@ -403,58 +403,6 @@ namespace mongo {
             delete s->sock;
             delete s;
             subscriptions.erase(it);
-        }
-    }
-
-
-    // update connections to replica set/cluster members on configuration change
-
-    void PubSub::updateReplSetMember(HostAndPort hp) {
-        std::map<HostAndPort, bool>::iterator member = rsMembers.find(hp);
-        if (!hp.isSelf() && member == rsMembers.end()) {
-            std::string endpoint = str::stream() << "tcp://" << hp.host()
-                                                 << ":" << (hp.port() + 1234);
-
-            sendMutex.lock();
-
-            try {
-                PubSub::extSendSocket->connect(endpoint.c_str());
-                log() << "Pubsub connected to new replica set member." << endl;
-            } catch (zmq::error_t& e) {
-                log() << "Error connecting to replica set member." << causedBy(e) << endl;
-            }
-
-            sendMutex.unlock();
-
-            rsMembers.insert(std::make_pair(hp, true));
-        } else {
-            member->second = true;
-        }
-    }
-
-    void PubSub::pruneReplSetMembers() {
-        for (std::map<HostAndPort, bool>::iterator it = rsMembers.begin();
-             it != rsMembers.end();
-             it++) {
-            if (it->second == false) {
-                std::string endpoint = str::stream() << "tcp://" << it->first.host()
-                                                     << ":" << (it->first.port() + 1234);
-
-                sendMutex.lock();
-
-                try {
-                    PubSub::extSendSocket->disconnect(endpoint.c_str());
-                    log() << "Pubsub disconnected from replica set member." << endl;
-                } catch (zmq::error_t& e) {
-                    log() << "Error disconnecting from replica set member." << causedBy(e) << endl;
-                }
-
-                sendMutex.unlock();
-
-                rsMembers.erase(it);
-            } else {
-                it->second = false;
-            }
         }
     }
 

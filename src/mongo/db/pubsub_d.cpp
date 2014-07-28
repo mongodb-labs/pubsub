@@ -33,18 +33,20 @@
 
 #include "mongo/base/init.h"
 #include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/server_options.h"
 
 namespace mongo {
-    namespace {
 
+    namespace {                                                                                     
+                                                                                                    
         MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) {
 
             // TODO: allow users to set pubsub ports on startup
             const int port = serverGlobalParams.port;
 
             // is publish socket regardless of if config or mongod
-            PubSub::extSendSocket = PubSub::initSendSocket();
+            PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
 
             // is pull socket if config, sub socket if mongod
             PubSub::extRecvSocket = PubSub::initRecvSocket();
@@ -66,7 +68,7 @@ namespace mongo {
                     // publish to all mongoses in the cluster
                     const std::string kExtPubEndpoint = str::stream() << "tcp://*:"
                                                                       << (port + 2345);
-                    PubSub::extSendSocket->bind(kExtPubEndpoint.c_str());
+                    PubSubSendSocket::extSendSocket->bind(kExtPubEndpoint.c_str());
                 } catch (zmq::error_t& e) {
                     // TODO: turn off pubsub if connection here fails
                     log() << "Error initializing pubsub sockets." << causedBy(e) << endl;
@@ -75,7 +77,7 @@ namespace mongo {
                 // automatically proxy messages from PULL endpoint to PUB endpoint
                 boost::thread internalProxy(PubSub::proxy,
                                             PubSub::extRecvSocket,
-                                            PubSub::extSendSocket);
+                                            PubSubSendSocket::extSendSocket);
             } else {
                 // each mongod in a replica set publishes its messages
                 // to all other mongods in its replica set
@@ -90,7 +92,7 @@ namespace mongo {
                     // (other mongods in replset connect to our sub socket when they join the set)
                     const std::string kExtPubEndpoint = str::stream() << "tcp://localhost:"
                                                                       << (port + 1234);
-                    PubSub::extSendSocket->connect(kExtPubEndpoint.c_str());
+                    PubSubSendSocket::extSendSocket->connect(kExtPubEndpoint.c_str());
 
                     // automatically proxy messages from SUB endpoint to client sub sockets
                     PubSub::intPubSocket.bind(PubSub::kIntPubsubEndpoint);

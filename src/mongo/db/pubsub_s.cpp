@@ -33,14 +33,16 @@
 
 #include "mongo/base/init.h"
 #include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/s/mongos_options.h"
 
 namespace mongo {
-    namespace {
 
-        MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) {
+    namespace {                                                                                     
+                                                                                                    
+        MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) { 
 
-            PubSub::extSendSocket = PubSub::initSendSocket();
+            PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
             HostAndPort minConfigHP;
@@ -63,7 +65,7 @@ namespace mongo {
             HostAndPort configPubEndpoint = HostAndPort(minConfigHP.host(),
                                                         minConfigHP.port() + 2345);
             try {
-                PubSub::extSendSocket->connect(("tcp://" +
+                PubSubSendSocket::extSendSocket->connect(("tcp://" +
                                                  configPullEndpoint.toString()).c_str());
                 PubSub::extRecvSocket->connect(("tcp://" +
                                                  configPubEndpoint.toString()).c_str());
