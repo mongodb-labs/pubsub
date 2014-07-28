@@ -302,7 +302,11 @@ namespace mongo {
             long long millisPolled = 0;
             bool pollAgain = false;
             std::map<SubscriptionId, std::string> errors;
-            std::priority_queue<SubscriptionMessage> messages = PubSub::poll(oids, timeout, millisPolled, pollAgain, errors);
+            std::priority_queue<SubscriptionMessage> messages = PubSub::poll(oids,
+                                                                             timeout,
+                                                                             millisPolled,
+                                                                             pollAgain,
+                                                                             errors);
 
             // serialize messages into BSON
             BSONObjBuilder messagesBuilder;
@@ -332,7 +336,9 @@ namespace mongo {
 
             if (errors.size() > 0) {
                 BSONObjBuilder errorBuilder;
-                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin(); it != errors.end(); it++) {
+                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
+                     it != errors.end();
+                     it++) {
                     errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());
@@ -400,7 +406,9 @@ namespace mongo {
 
             if (errors.size() > 0) {
                 BSONObjBuilder errorBuilder;
-                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin(); it != errors.end(); it++) {
+                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
+                     it != errors.end();
+                     it++) {
                     errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());

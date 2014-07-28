@@ -46,7 +46,9 @@ namespace mongo {
         std::string channel;
         BSONObj message;
 
-        SubscriptionMessage(SubscriptionId _subscriptionId, std::string _channel, BSONObj _message) {
+        SubscriptionMessage(SubscriptionId _subscriptionId,
+                            std::string _channel,
+                            BSONObj _message) {
             subscriptionId = _subscriptionId;
             channel = _channel;
             message = _message;
@@ -67,7 +69,12 @@ namespace mongo {
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
         static SubscriptionId subscribe(const string& channel);
-        static std::priority_queue<SubscriptionMessage> poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled, bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
+        static std::priority_queue<SubscriptionMessage> poll(std::set<SubscriptionId>&
+                                                                                   subscriptionIds,
+                                                             long timeout, long long& millisPolled,
+                                                             bool& pollAgain,
+                                                             std::map<SubscriptionId,
+                                                                      std::string>& errors);
         static void unsubscribe(const SubscriptionId& subscriptionId,
                                 std::map<SubscriptionId, std::string>& errors, bool force=false);
 
@@ -153,7 +160,9 @@ namespace mongo {
 
         // This method receives messages on all subscriptions passed in. In the event of an error,
         // this method inserts an error message in the errors map for the given SubscriptionId.
-        static std::priority_queue<SubscriptionMessage> recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs, std::map<SubscriptionId, std::string>& errors);
+        static std::priority_queue<SubscriptionMessage> recvMessages(
+                                std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs,
+                                std::map<SubscriptionId, std::string>& errors);
     };
 
 }  // namespace mongo

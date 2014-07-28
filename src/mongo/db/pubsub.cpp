@@ -196,7 +196,11 @@ namespace mongo {
         return subscriptionId;
     }
 
-    std::priority_queue<SubscriptionMessage> PubSub::poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled, bool& pollAgain, std::map<SubscriptionId, std::string>& errors) {
+    std::priority_queue<SubscriptionMessage> PubSub::poll(std::set<SubscriptionId>& subscriptionIds,
+                                                          long timeout, long long& millisPolled,
+                                                          bool& pollAgain,
+                                                          std::map<SubscriptionId,
+                                                                   std::string>& errors) {
 
         std::priority_queue<SubscriptionMessage> messages;
         std::vector<std::pair<SubscriptionId, SubscriptionInfo*> > subs;
@@ -226,7 +230,8 @@ namespace mongo {
                 for (size_t i = 0; i < subs.size(); i++) {
                     if (subs[i].second->shouldUnsub) {
                         SubscriptionId subscriptionId = subs[i].first;
-                        errors.insert(std::make_pair(subscriptionId, "Poll interrupted by unsubscribe."));
+                        errors.insert(std::make_pair(subscriptionId,
+                                                     "Poll interrupted by unsubscribe."));
                         items.erase(items.begin() + i);
                         subs.erase(subs.begin() + i);
                         PubSub::unsubscribe(subscriptionId, errors, true);
@@ -306,7 +311,8 @@ namespace mongo {
         }
     }
 
-    PubSub::SubscriptionInfo* PubSub::checkoutSocket(SubscriptionId subscriptionId, std::string& errmsg) {
+    PubSub::SubscriptionInfo* PubSub::checkoutSocket(SubscriptionId subscriptionId,
+                                                     std::string& errmsg) {
         SimpleMutex::scoped_lock lk(mapMutex);
         std::map<SubscriptionId, SubscriptionInfo*>::iterator subIt =
                                                                 subscriptions.find(subscriptionId);
@@ -329,7 +335,9 @@ namespace mongo {
         s->inUse = 0;
     }
 
-    std::priority_queue<SubscriptionMessage> PubSub::recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs, std::map<SubscriptionId, std::string>& errors) {
+    std::priority_queue<SubscriptionMessage> PubSub::recvMessages(
+                                std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs,
+                                std::map<SubscriptionId, std::string>& errors) {
 
         std::priority_queue<SubscriptionMessage> outbox;
 
@@ -358,7 +366,8 @@ namespace mongo {
                     outbox.push(m);
                 }
             } catch (zmq::error_t& e) {
-                errors.insert(std::make_pair(subscriptionId, "Error receiving messages from zmq socket."));
+                errors.insert(std::make_pair(subscriptionId,
+                                             "Error receiving messages from zmq socket."));
             }
 
             // done receiving from ZMQ socket
