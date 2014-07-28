@@ -756,7 +756,7 @@ zmq_getsockopt(3) Manual Page
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The <em>zmq_getsockopt()</em> function shall retrieve the value for the option
-specified by the <em>option_name</em> argument for the ØMQ socket pointed to by the
+specified by the <em>option_name</em> argument for the ZeroMQ socket pointed to by the
 <em>socket</em> argument, and store it in the buffer pointed to by the <em>option_value</em>
 argument. The <em>option_len</em> argument is the size in bytes of the buffer pointed
 to by <em>option_value</em>; upon successful completion <em>zmq_getsockopt()</em> shall
@@ -873,11 +873,11 @@ all
 <h3 id="_zmq_sndhwm_retrieves_high_water_mark_for_outbound_messages">ZMQ_SNDHWM: Retrieves high water mark for outbound messages</h3>
 <div class="paragraph"><p>The <em>ZMQ_SNDHWM</em> option shall return the high water mark for outbound messages
 on the specified <em>socket</em>. The high water mark is a hard limit on the maximum
-number of outstanding messages ØMQ shall queue in memory for any single peer
+number of outstanding messages ZeroMQ shall queue in memory for any single peer
 that the specified <em>socket</em> is communicating with. A value of zero means no
 limit.</p></div>
 <div class="paragraph"><p>If this limit has been reached the socket shall enter an exceptional state and
-depending on the socket type, ØMQ shall take appropriate action such as
+depending on the socket type, ZeroMQ shall take appropriate action such as
 blocking or dropping sent messages. Refer to the individual socket descriptions
 in <a href="zmq_socket.html">zmq_socket(3)</a> for details on the exact action taken for each socket
 type.</p></div>
@@ -932,11 +932,11 @@ all
 <h3 id="_zmq_rcvhwm_retrieve_high_water_mark_for_inbound_messages">ZMQ_RCVHWM: Retrieve high water mark for inbound messages</h3>
 <div class="paragraph"><p>The <em>ZMQ_RCVHWM</em> option shall return the high water mark for inbound messages on
 the specified <em>socket</em>. The high water mark is a hard limit on the maximum
-number of outstanding messages ØMQ shall queue in memory for any single peer
+number of outstanding messages ZeroMQ shall queue in memory for any single peer
 that the specified <em>socket</em> is communicating with. A value of zero means no
 limit.</p></div>
 <div class="paragraph"><p>If this limit has been reached the socket shall enter an exceptional state and
-depending on the socket type, ØMQ shall take appropriate action such as
+depending on the socket type, ZeroMQ shall take appropriate action such as
 blocking or dropping sent messages. Refer to the individual socket descriptions
 in <a href="zmq_socket.html">zmq_socket(3)</a> for details on the exact action taken for each socket
 type.</p></div>
@@ -991,10 +991,10 @@ all
 <h3 id="_zmq_affinity_retrieve_i_o_thread_affinity">ZMQ_AFFINITY: Retrieve I/O thread affinity</h3>
 <div class="paragraph"><p>The <em>ZMQ_AFFINITY</em> option shall retrieve the I/O thread affinity for newly
 created connections on the specified <em>socket</em>.</p></div>
-<div class="paragraph"><p>Affinity determines which threads from the ØMQ I/O thread pool associated with
+<div class="paragraph"><p>Affinity determines which threads from the ZeroMQ I/O thread pool associated with
 the socket&#8217;s <em>context</em> shall handle newly created connections.  A value of zero
 specifies no affinity, meaning that work shall be distributed fairly among all
-ØMQ I/O threads in the thread pool. For non-zero values, the lowest bit
+ZeroMQ I/O threads in the thread pool. For non-zero values, the lowest bit
 corresponds to thread 1, second lowest bit to thread 2 and so on.  For example,
 a value of 3 specifies that subsequent connections on <em>socket</em> shall be handled
 exclusively by I/O threads 1 and 2.</p></div>
@@ -1054,7 +1054,7 @@ Socket identity is used only by request/reply pattern. Namely, it can be used
 in tandem with ROUTER socket to route messages to the peer with specific
 identity.</p></div>
 <div class="paragraph"><p>Identity should be at least one byte and at most 255 bytes long. Identities
-starting with binary zero are reserved for use by ØMQ infrastructure.</p></div>
+starting with binary zero are reserved for use by ZeroMQ infrastructure.</p></div>
 <div class="hdlist"><table>
 <tr>
 <td class="hdlist1">
@@ -1395,7 +1395,7 @@ all
 <div class="sect2">
 <h3 id="_zmq_reconnect_ivl_retrieve_reconnection_interval">ZMQ_RECONNECT_IVL: Retrieve reconnection interval</h3>
 <div class="paragraph"><p>The <em>ZMQ_RECONNECT_IVL</em> option shall retrieve the initial reconnection interval
-for the specified <em>socket</em>.  The reconnection interval is the period ØMQ shall
+for the specified <em>socket</em>.  The reconnection interval is the period ZeroMQ shall
 wait between attempts to reconnect disconnected peers when using
 connection-oriented transports. The value -1 means no reconnection.</p></div>
 <div class="admonitionblock">
@@ -1403,7 +1403,7 @@ connection-oriented transports. The value -1 means no reconnection.</p></div>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">The reconnection interval may be randomized by ØMQ to prevent
+<td class="content">The reconnection interval may be randomized by ZeroMQ to prevent
 reconnection storms in topologies with a large number of peers per socket.</td>
 </tr></table>
 </div>
@@ -1457,7 +1457,7 @@ all, only for connection-oriented transports
 <div class="sect2">
 <h3 id="_zmq_reconnect_ivl_max_retrieve_maximum_reconnection_interval">ZMQ_RECONNECT_IVL_MAX: Retrieve maximum reconnection interval</h3>
 <div class="paragraph"><p>The <em>ZMQ_RECONNECT_IVL_MAX</em> option shall retrieve the maximum reconnection
-interval for the specified <em>socket</em>.  This is the maximum period ØMQ shall wait
+interval for the specified <em>socket</em>.  This is the maximum period ZeroMQ shall wait
 between attempts to reconnect. On each reconnect attempt, the previous interval
 shall be doubled untill ZMQ_RECONNECT_IVL_MAX is reached. This allows for
 exponential backoff strategy. Default value means no exponential backoff is
@@ -1943,7 +1943,7 @@ all, primarily when using TCP/IPC transports.
 <h3 id="_zmq_fd_retrieve_file_descriptor_associated_with_the_socket">ZMQ_FD: Retrieve file descriptor associated with the socket</h3>
 <div class="paragraph"><p>The <em>ZMQ_FD</em> option shall retrieve the file descriptor associated with the
 specified <em>socket</em>. The returned file descriptor can be used to integrate the
-socket into an existing event loop; the ØMQ library shall signal any pending
+socket into an existing event loop; the ZeroMQ library shall signal any pending
 events on the socket in an <em>edge-triggered</em> fashion by making the file
 descriptor become ready for reading.</p></div>
 <div class="admonitionblock">
@@ -2807,7 +2807,7 @@ option value.
 </dt>
 <dd>
 <p>
-The ØMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
+The ZeroMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -2854,15 +2854,15 @@ assert (rc == 0);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

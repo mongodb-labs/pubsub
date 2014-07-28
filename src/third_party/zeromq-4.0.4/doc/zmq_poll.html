@@ -770,10 +770,10 @@ array. The <strong>zmq_pollitem_t</strong> structure is defined as follows:</p><
     short <em>revents</em>;
 } zmq_pollitem_t;</tt></pre>
 </div></div>
-<div class="paragraph"><p>For each <strong>zmq_pollitem_t</strong> item, <em>zmq_poll()</em> shall examine either the ØMQ
+<div class="paragraph"><p>For each <strong>zmq_pollitem_t</strong> item, <em>zmq_poll()</em> shall examine either the ZeroMQ
 socket referenced by <em>socket</em> <strong>or</strong> the standard socket specified by the file
 descriptor <em>fd</em>, for the event(s) specified in <em>events</em>. If both <em>socket</em> and
-<em>fd</em> are set in a single <strong>zmq_pollitem_t</strong>, the ØMQ socket referenced by
+<em>fd</em> are set in a single <strong>zmq_pollitem_t</strong>, the ZeroMQ socket referenced by
 <em>socket</em> shall take precedence and the value of <em>fd</em> shall be ignored.</p></div>
 <div class="paragraph"><p>For each <strong>zmq_pollitem_t</strong> item, <em>zmq_poll()</em> shall first clear the <em>revents</em>
 member, and then indicate any requested events that have occurred by setting the
@@ -792,7 +792,7 @@ by OR&#8217;ing a combination of the following event flags:</p></div>
 </dt>
 <dd>
 <p>
-For ØMQ sockets, at least one message may be received from the <em>socket</em> without
+For ZeroMQ sockets, at least one message may be received from the <em>socket</em> without
 blocking. For standard sockets this is equivalent to the <em>POLLIN</em> flag of the
 <em>poll()</em> system call and generally means that at least one byte of data may be
 read from <em>fd</em> without blocking.
@@ -803,7 +803,7 @@ read from <em>fd</em> without blocking.
 </dt>
 <dd>
 <p>
-For ØMQ sockets, at least one message may be sent to the <em>socket</em> without
+For ZeroMQ sockets, at least one message may be sent to the <em>socket</em> without
 blocking. For standard sockets this is equivalent to the <em>POLLOUT</em> flag of the
 <em>poll()</em> system call and generally means that at least one byte of data may be
 written to <em>fd</em> without blocking.
@@ -816,7 +816,7 @@ written to <em>fd</em> without blocking.
 <p>
 For standard sockets, this flag is passed through <em>zmq_poll()</em> to the
 underlying <em>poll()</em> system call and generally means that some sort of error
-condition is present on the socket specified by <em>fd</em>. For ØMQ sockets this flag
+condition is present on the socket specified by <em>fd</em>. For ZeroMQ sockets this flag
 has no effect if set in <em>events</em>, and shall never be returned in <em>revents</em> by
 <em>zmq_poll()</em>.
 </p>
@@ -853,7 +853,7 @@ events have been signaled. Upon failure, <em>zmq_poll()</em> shall return <tt>-1
 <dd>
 <p>
 At least one of the members of the <em>items</em> array refers to a <em>socket</em> whose
-associated ØMQ <em>context</em> was terminated.
+associated ZeroMQ <em>context</em> was terminated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -880,7 +880,7 @@ available.
 <h2 id="_example">EXAMPLE</h2>
 <div class="sectionbody">
 <div class="listingblock">
-<div class="title">Polling indefinitely for input events on both a ØMQ socket and a standard socket.</div>
+<div class="title">Polling indefinitely for input events on both a ZeroMQ socket and a standard socket.</div>
 <div class="content">
 <pre><tt>zmq_pollitem_t items [2];
 /* First item refers to 0MQ socket 'socket' */
@@ -910,15 +910,15 @@ assert (rc &gt;= 0);
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

@@ -763,18 +763,18 @@ and can be changed at any time to affect subsequent binds and/or connects.</p></
 <div class="sectionbody">
 <div class="paragraph"><p>The <em>zmq_setsockopt()</em> function shall set the option specified by the
 <em>option_name</em> argument to the value pointed to by the <em>option_value</em> argument
-for the ØMQ socket pointed to by the <em>socket</em> argument. The <em>option_len</em>
+for the ZeroMQ socket pointed to by the <em>socket</em> argument. The <em>option_len</em>
 argument is the size of the option value in bytes.</p></div>
 <div class="paragraph"><p>The following socket options can be set with the <em>zmq_setsockopt()</em> function:</p></div>
 <div class="sect2">
 <h3 id="_zmq_sndhwm_set_high_water_mark_for_outbound_messages">ZMQ_SNDHWM: Set high water mark for outbound messages</h3>
 <div class="paragraph"><p>The <em>ZMQ_SNDHWM</em> option shall set the high water mark for outbound messages on
 the specified <em>socket</em>. The high water mark is a hard limit on the maximum
-number of outstanding messages ØMQ shall queue in memory for any single peer
+number of outstanding messages ZeroMQ shall queue in memory for any single peer
 that the specified <em>socket</em> is communicating with. A value of zero means no
 limit.</p></div>
 <div class="paragraph"><p>If this limit has been reached the socket shall enter an exceptional state and
-depending on the socket type, ØMQ shall take appropriate action such as
+depending on the socket type, ZeroMQ shall take appropriate action such as
 blocking or dropping sent messages. Refer to the individual socket descriptions
 in <a href="zmq_socket.html">zmq_socket(3)</a> for details on the exact action taken for each socket
 type.</p></div>
@@ -783,7 +783,7 @@ type.</p></div>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">ØMQ does not guarantee that the socket will accept as many as ZMQ_SNDHWM
+<td class="content">ZeroMQ does not guarantee that the socket will accept as many as ZMQ_SNDHWM
 messages, and the actual limit may be as much as 60-70% lower depending on the
 flow of messages on the socket.</td>
 </tr></table>
@@ -839,11 +839,11 @@ all
 <h3 id="_zmq_rcvhwm_set_high_water_mark_for_inbound_messages">ZMQ_RCVHWM: Set high water mark for inbound messages</h3>
 <div class="paragraph"><p>The <em>ZMQ_RCVHWM</em> option shall set the high water mark for inbound messages on
 the specified <em>socket</em>. The high water mark is a hard limit on the maximum
-number of outstanding messages ØMQ shall queue in memory for any single peer
+number of outstanding messages ZeroMQ shall queue in memory for any single peer
 that the specified <em>socket</em> is communicating with. A value of zero means no
 limit.</p></div>
 <div class="paragraph"><p>If this limit has been reached the socket shall enter an exceptional state and
-depending on the socket type, ØMQ shall take appropriate action such as
+depending on the socket type, ZeroMQ shall take appropriate action such as
 blocking or dropping sent messages. Refer to the individual socket descriptions
 in <a href="zmq_socket.html">zmq_socket(3)</a> for details on the exact action taken for each socket
 type.</p></div>
@@ -898,10 +898,10 @@ all
 <h3 id="_zmq_affinity_set_i_o_thread_affinity">ZMQ_AFFINITY: Set I/O thread affinity</h3>
 <div class="paragraph"><p>The <em>ZMQ_AFFINITY</em> option shall set the I/O thread affinity for newly created
 connections on the specified <em>socket</em>.</p></div>
-<div class="paragraph"><p>Affinity determines which threads from the ØMQ I/O thread pool associated with
+<div class="paragraph"><p>Affinity determines which threads from the ZeroMQ I/O thread pool associated with
 the socket&#8217;s <em>context</em> shall handle newly created connections.  A value of zero
 specifies no affinity, meaning that work shall be distributed fairly among all
-ØMQ I/O threads in the thread pool. For non-zero values, the lowest bit
+ZeroMQ I/O threads in the thread pool. For non-zero values, the lowest bit
 corresponds to thread 1, second lowest bit to thread 2 and so on.  For example,
 a value of 3 specifies that subsequent connections on <em>socket</em> shall be handled
 exclusively by I/O threads 1 and 2.</p></div>
@@ -1423,7 +1423,7 @@ all
 <div class="sect2">
 <h3 id="_zmq_reconnect_ivl_set_reconnection_interval">ZMQ_RECONNECT_IVL: Set reconnection interval</h3>
 <div class="paragraph"><p>The <em>ZMQ_RECONNECT_IVL</em> option shall set the initial reconnection interval for
-the specified <em>socket</em>.  The reconnection interval is the period ØMQ
+the specified <em>socket</em>.  The reconnection interval is the period ZeroMQ
 shall wait between attempts to reconnect disconnected peers when using
 connection-oriented transports. The value -1 means no reconnection.</p></div>
 <div class="admonitionblock">
@@ -1431,7 +1431,7 @@ connection-oriented transports. The value -1 means no reconnection.</p></div>
 <td class="icon">
 <div class="title">Note</div>
 </td>
-<td class="content">The reconnection interval may be randomized by ØMQ to prevent
+<td class="content">The reconnection interval may be randomized by ZeroMQ to prevent
 reconnection storms in topologies with a large number of peers per socket.</td>
 </tr></table>
 </div>
@@ -1485,7 +1485,7 @@ all, only for connection-oriented transports
 <div class="sect2">
 <h3 id="_zmq_reconnect_ivl_max_set_maximum_reconnection_interval">ZMQ_RECONNECT_IVL_MAX: Set maximum reconnection interval</h3>
 <div class="paragraph"><p>The <em>ZMQ_RECONNECT_IVL_MAX</em> option shall set the maximum reconnection interval
-for the specified <em>socket</em>.  This is the maximum period ØMQ shall wait between
+for the specified <em>socket</em>.  This is the maximum period ZeroMQ shall wait between
 attempts to reconnect. On each reconnect attempt, the previous interval shall be
 doubled untill ZMQ_RECONNECT_IVL_MAX is reached. This allows for exponential
 backoff strategy. Default value means no exponential backoff is performed and
@@ -2025,7 +2025,7 @@ ZMQ_ROUTER
 <h3 id="_zmq_router_raw_switch_router_socket_to_raw_mode">ZMQ_ROUTER_RAW: switch ROUTER socket to raw mode</h3>
 <div class="paragraph"><p>Sets the raw mode on the ROUTER, when set to 1. When the ROUTER socket is in
 raw mode, and when using the tcp:// transport, it will read and write TCP data
-without ØMQ framing. This lets ØMQ applications talk to non-ØMQ applications.
+without ZeroMQ framing. This lets ZeroMQ applications talk to non-ZeroMQ applications.
 When using raw mode, you cannot set explicit identities, and the ZMQ_MSGMORE
 flag is ignored when sending data messages. In raw mode you can close a specific
 connection by sending it a zero-length message (following the identity frame).</p></div>
@@ -3087,7 +3087,7 @@ The requested option <em>option_name</em> is unknown, or the requested <em>optio
 </dt>
 <dd>
 <p>
-The ØMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
+The ZeroMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -3153,15 +3153,15 @@ assert (rc);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2014-03-10 22:20:14 CET
 </div>
 </div>

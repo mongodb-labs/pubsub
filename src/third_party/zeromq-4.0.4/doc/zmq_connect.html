@@ -760,7 +760,7 @@ accepts incoming connections on that endpoint.</p></div>
 <div class="paragraph"><p>The <em>endpoint</em> is a string consisting of a <em>transport</em><tt>://</tt> followed by an
 <em>address</em>. The <em>transport</em> specifies the underlying protocol to use. The
 <em>address</em> specifies the transport-specific address to connect to.</p></div>
-<div class="paragraph"><p>ØMQ provides the the following transports:</p></div>
+<div class="paragraph"><p>ZeroMQ provides the the following transports:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
 <em>tcp</em>
@@ -795,7 +795,7 @@ reliable multicast transport using PGM, see <a href="zmq_pgm.html">zmq_pgm(7)</a
 </p>
 </dd>
 </dl></div>
-<div class="paragraph"><p>Every ØMQ socket type except <em>ZMQ_PAIR</em> supports one-to-many and many-to-one
+<div class="paragraph"><p>Every ZeroMQ socket type except <em>ZMQ_PAIR</em> supports one-to-many and many-to-one
 semantics. The precise semantics depend on the socket type and are defined in
 <a href="zmq_socket.html">zmq_socket(3)</a>.</p></div>
 <div class="admonitionblock">
@@ -804,7 +804,7 @@ semantics. The precise semantics depend on the socket type and are defined in
 <div class="title">Note</div>
 </td>
 <td class="content">for most transports and socket types the connection is not performed
-immediately but as needed by ØMQ. Thus a successful call to <em>zmq_connect()</em>
+immediately but as needed by ZeroMQ. Thus a successful call to <em>zmq_connect()</em>
 does not mean that the connection was or could actually be established.
 Because of this, for most transports and socket types the order in which
 a <em>server</em> socket is bound and a <em>client</em> socket is connected to it does not
@@ -869,7 +869,7 @@ The requested <em>transport</em> protocol is not compatible with the socket type
 </dt>
 <dd>
 <p>
-The ØMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
+The ZeroMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -920,15 +920,15 @@ assert (rc == 0);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

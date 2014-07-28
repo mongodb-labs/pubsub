@@ -759,9 +759,9 @@ zmq_msg_init_data(3) Manual Page
 <div class="paragraph"><p>The <em>zmq_msg_init_data()</em> function shall initialise the message object
 referenced by <em>msg</em> to represent the content referenced by the buffer located
 at address <em>data</em>, <em>size</em> bytes long. No copy of <em>data</em> shall be performed and
-ØMQ shall take ownership of the supplied buffer.</p></div>
+ZeroMQ shall take ownership of the supplied buffer.</p></div>
 <div class="paragraph"><p>If provided, the deallocation function <em>ffn</em> shall be called once the data
-buffer is no longer required by ØMQ, with the <em>data</em> and <em>hint</em> arguments
+buffer is no longer required by ZeroMQ, with the <em>data</em> and <em>hint</em> arguments
 supplied to <em>zmq_msg_init_data()</em>.</p></div>
 <div class="admonitionblock">
 <table><tr>
@@ -851,15 +851,15 @@ assert (rc == 0);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

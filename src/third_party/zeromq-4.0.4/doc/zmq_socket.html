@@ -755,7 +755,7 @@ zmq_socket(3) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The <em>zmq_socket()</em> function shall create a ØMQ socket within the specified
+<div class="paragraph"><p>The <em>zmq_socket()</em> function shall create a ZeroMQ socket within the specified
 <em>context</em> and return an opaque handle to the newly created socket. The <em>type</em>
 argument specifies the socket type, which determines the semantics of
 communication over the socket.</p></div>
@@ -766,25 +766,25 @@ endpoint must be created for accepting incoming connections with
 <a href="zmq_bind.html">zmq_bind(3)</a>.</p></div>
 <div class="paragraph"><div class="title">Key differences to conventional sockets</div><p>Generally speaking, conventional sockets present a <em>synchronous</em> interface to
 either connection-oriented reliable byte streams (SOCK_STREAM), or
-connection-less unreliable datagrams (SOCK_DGRAM). In comparison, ØMQ sockets
+connection-less unreliable datagrams (SOCK_DGRAM). In comparison, ZeroMQ sockets
 present an abstraction of an asynchronous <em>message queue</em>, with the exact
 queueing semantics depending on the socket type in use. Where conventional
-sockets transfer streams of bytes or discrete datagrams, ØMQ sockets transfer
+sockets transfer streams of bytes or discrete datagrams, ZeroMQ sockets transfer
 discrete <em>messages</em>.</p></div>
-<div class="paragraph"><p>ØMQ sockets being <em>asynchronous</em> means that the timings of the physical
+<div class="paragraph"><p>ZeroMQ sockets being <em>asynchronous</em> means that the timings of the physical
 connection setup and tear down, reconnect and effective delivery are transparent
-to the user and organized by ØMQ itself. Further, messages may be <em>queued</em> in
+to the user and organized by ZeroMQ itself. Further, messages may be <em>queued</em> in
 the event that a peer is unavailable to receive them.</p></div>
 <div class="paragraph"><p>Conventional sockets allow only strict one-to-one (two peers), many-to-one
 (many clients, one server), or in some cases one-to-many (multicast)
-relationships. With the exception of <em>ZMQ_PAIR</em>, ØMQ sockets may be connected
+relationships. With the exception of <em>ZMQ_PAIR</em>, ZeroMQ sockets may be connected
 <strong>to multiple endpoints</strong> using <em>zmq_connect()</em>, while simultaneously accepting
 incoming connections <strong>from multiple endpoints</strong> bound to the socket using
 <em>zmq_bind()</em>, thus allowing many-to-many relationships.</p></div>
-<div class="paragraph"><div class="title">Thread safety</div><p>ØMQ <em>sockets</em> are <em>not</em> thread safe. Applications MUST NOT use a socket
+<div class="paragraph"><div class="title">Thread safety</div><p>ZeroMQ <em>sockets</em> are <em>not</em> thread safe. Applications MUST NOT use a socket
 from multiple threads except after migrating a socket from one thread to
 another with a "full fence" memory barrier.</p></div>
-<div class="paragraph"><div class="title">Socket types</div><p>The following sections present the socket types defined by ØMQ, grouped by the
+<div class="paragraph"><div class="title">Socket types</div><p>The following sections present the socket types defined by ZeroMQ, grouped by the
 general <em>messaging pattern</em> which is built from related socket types.</p></div>
 <div class="sect2">
 <h3 id="_request_reply_pattern">Request-reply pattern</h3>
@@ -1676,7 +1676,7 @@ asynchronous requests and replies in either direction.</p></div>
 <div class="sect3">
 <h4 id="_zmq_stream">ZMQ_STREAM</h4>
 <div class="paragraph"><p>A socket of type <em>ZMQ_STREAM</em> is used to send and receive TCP data from a
-non-ØMQ peer, when using the tcp:// transport. A <em>ZMQ_STREAM</em> socket can
+non-ZeroMQ peer, when using the tcp:// transport. A <em>ZMQ_STREAM</em> socket can
 act as client and/or server, sending and/or receiving TCP data asynchronously.</p></div>
 <div class="paragraph"><p>When receiving TCP data, a <em>ZMQ_STREAM</em> socket shall prepend a message part
 containing the <em>identity</em> of the originating peer to the message before passing
@@ -1798,7 +1798,7 @@ The provided <em>context</em> is invalid.
 </dt>
 <dd>
 <p>
-The limit on the total number of open ØMQ sockets has been reached.
+The limit on the total number of open ZeroMQ sockets has been reached.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -1868,15 +1868,15 @@ zmq_ctx_destroy (ctx);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-12-08 08:02:10 CET
 </div>
 </div>

@@ -750,14 +750,14 @@ zmq_inproc(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The in-process transport passes messages via memory directly between threads
-sharing a single ØMQ <em>context</em>.</p></div>
+sharing a single ZeroMQ <em>context</em>.</p></div>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
 <div class="title">Note</div>
 </td>
 <td class="content">No I/O threads are involved in passing messages using the <em>inproc</em>
-transport. Therefore, if you are using a ØMQ <em>context</em> for in-process messaging
+transport. Therefore, if you are using a ZeroMQ <em>context</em> for in-process messaging
 only you can initialise the <em>context</em> with zero I/O threads. See
 <a href="zmq_init.html">zmq_init(3)</a> for details.</td>
 </tr></table>
@@ -767,7 +767,7 @@ only you can initialise the <em>context</em> with zero I/O threads. See
 <div class="sect1">
 <h2 id="_addressing">ADDRESSING</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>A ØMQ endpoint is a string consisting of a <em>transport</em><tt>://</tt> followed by an
+<div class="paragraph"><p>A ZeroMQ endpoint is a string consisting of a <em>transport</em><tt>://</tt> followed by an
 <em>address</em>. The <em>transport</em> specifies the underlying protocol to use. The
 <em>address</em> specifies the transport-specific address to connect to.</p></div>
 <div class="paragraph"><p>For the in-process transport, the transport is <tt>inproc</tt>, and the meaning of
@@ -776,7 +776,7 @@ the <em>address</em> part is defined below.</p></div>
 <h3 id="_assigning_a_local_address_to_a_socket">Assigning a local address to a socket</h3>
 <div class="paragraph"><p>When assigning a local address to a <em>socket</em> using <em>zmq_bind()</em> with the
 <em>inproc</em> transport, the <em>endpoint</em> shall be interpreted as an arbitrary string
-identifying the <em>name</em> to create. The <em>name</em> must be unique within the ØMQ
+identifying the <em>name</em> to create. The <em>name</em> must be unique within the ZeroMQ
 <em>context</em> associated with the <em>socket</em> and may be up to 256 characters in
 length.  No other restrictions are placed on the format of the <em>name</em>.</p></div>
 </div>
@@ -785,7 +785,7 @@ length.  No other restrictions are placed on the format of the <em>name</em>.</p
 <div class="paragraph"><p>When connecting a <em>socket</em> to a peer address using <em>zmq_connect()</em> with the
 <em>inproc</em> transport, the <em>endpoint</em> shall be interpreted as an arbitrary string
 identifying the <em>name</em> to connect to.  The <em>name</em> must have been previously
-created by assigning it to at least one <em>socket</em> within the same ØMQ <em>context</em>
+created by assigning it to at least one <em>socket</em> within the same ZeroMQ <em>context</em>
 as the <em>socket</em> being connected.</p></div>
 </div>
 </div>
@@ -829,15 +829,15 @@ assert (rc == 0);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

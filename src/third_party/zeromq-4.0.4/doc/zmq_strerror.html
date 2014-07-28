@@ -756,7 +756,7 @@ zmq_strerror(3) Manual Page
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The <em>zmq_strerror()</em> function shall return a pointer to an error message string
-corresponding to the error number specified by the <em>errnum</em> argument. As ØMQ
+corresponding to the error number specified by the <em>errnum</em> argument. As ZeroMQ
 defines additional error numbers over and above those defined by the operating
 system, applications should use <em>zmq_strerror()</em> in preference to the standard
 <em>strerror()</em> function.</p></div>
@@ -779,7 +779,7 @@ string.</p></div>
 <h2 id="_example">EXAMPLE</h2>
 <div class="sectionbody">
 <div class="listingblock">
-<div class="title">Displaying an error message when a ØMQ context cannot be initialised</div>
+<div class="title">Displaying an error message when a ZeroMQ context cannot be initialised</div>
 <div class="content">
 <pre><tt>void *ctx = zmq_init (1, 1, 0);
 if (!ctx) {
@@ -798,15 +798,15 @@ if (!ctx) {
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

@@ -756,23 +756,23 @@ zmq(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The ØMQ lightweight messaging kernel is a library which extends the standard
+<div class="paragraph"><p>The ZeroMQ lightweight messaging kernel is a library which extends the standard
 socket interfaces with features traditionally provided by specialised
-<em>messaging middleware</em> products. ØMQ sockets provide an abstraction of
+<em>messaging middleware</em> products. ZeroMQ sockets provide an abstraction of
 asynchronous <em>message queues</em>, multiple <em>messaging patterns</em>, message
 filtering (<em>subscriptions</em>), seamless access to multiple <em>transport protocols</em>
 and more.</p></div>
-<div class="paragraph"><p>This documentation presents an overview of ØMQ concepts, describes how ØMQ
+<div class="paragraph"><p>This documentation presents an overview of ZeroMQ concepts, describes how ZeroMQ
 abstracts standard sockets and provides a reference manual for the functions
-provided by the ØMQ library.</p></div>
+provided by the ZeroMQ library.</p></div>
 <div class="sect2">
 <h3 id="_context">Context</h3>
-<div class="paragraph"><p>Before using any ØMQ library functions you must create a ØMQ <em>context</em>. When
+<div class="paragraph"><p>Before using any ZeroMQ library functions you must create a ZeroMQ <em>context</em>. When
 you exit your application you must destroy the <em>context</em>. These functions let
 you work with <em>contexts</em>:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Create a new ØMQ context
+Create a new ZeroMQ context
 </dt>
 <dd>
 <p>
@@ -789,7 +789,7 @@ Work with context properties
 </p>
 </dd>
 <dt class="hdlist1">
-Destroy a ØMQ context
+Destroy a ZeroMQ context
 </dt>
 <dd>
 <p>
@@ -800,7 +800,7 @@ Destroy a ØMQ context
 <div class="paragraph"><p>These deprecated functions let you create and destroy <em>contexts</em>:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Initialise ØMQ context
+Initialise ZeroMQ context
 </dt>
 <dd>
 <p>
@@ -808,7 +808,7 @@ Initialise ØMQ context
 </p>
 </dd>
 <dt class="hdlist1">
-Terminate ØMQ context
+Terminate ZeroMQ context
 </dt>
 <dd>
 <p>
@@ -818,10 +818,10 @@ Terminate ØMQ context
 </dl></div>
 <div class="sect3">
 <h4 id="_thread_safety">Thread safety</h4>
-<div class="paragraph"><p>A ØMQ <em>context</em> is thread safe and may be shared among as many application
+<div class="paragraph"><p>A ZeroMQ <em>context</em> is thread safe and may be shared among as many application
 threads as necessary, without any additional locking required on the part of
 the caller.</p></div>
-<div class="paragraph"><p>Individual ØMQ <em>sockets</em> are <em>not</em> thread safe except in the case where full
+<div class="paragraph"><p>Individual ZeroMQ <em>sockets</em> are <em>not</em> thread safe except in the case where full
 memory barriers are issued when migrating a socket from one thread to another.
 In practice this means applications can create a socket in one thread with
 <em>zmq_socket()</em> and then pass it to a <em>newly created</em> thread as part of thread
@@ -831,16 +831,16 @@ initialization, for example via a structure passed as an argument to
 <div class="sect3">
 <h4 id="_multiple_contexts">Multiple contexts</h4>
 <div class="paragraph"><p>Multiple <em>contexts</em> may coexist within a single application. Thus, an
-application can use ØMQ directly and at the same time make use of any number of
-additional libraries or components which themselves make use of ØMQ as long as
+application can use ZeroMQ directly and at the same time make use of any number of
+additional libraries or components which themselves make use of ZeroMQ as long as
 the above guidelines regarding thread safety are adhered to.</p></div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_messages">Messages</h3>
-<div class="paragraph"><p>A ØMQ message is a discrete unit of data passed between applications or
-components of the same application. ØMQ messages have no internal structure and
-from the point of view of ØMQ itself they are considered to be opaque binary
+<div class="paragraph"><p>A ZeroMQ message is a discrete unit of data passed between applications or
+components of the same application. ZeroMQ messages have no internal structure and
+from the point of view of ZeroMQ itself they are considered to be opaque binary
 data.</p></div>
 <div class="paragraph"><p>The following functions are provided to work with messages:</p></div>
 <div class="dlist"><dl>
@@ -903,7 +903,7 @@ Message manipulation
 </div>
 <div class="sect2">
 <h3 id="_sockets">Sockets</h3>
-<div class="paragraph"><p>ØMQ sockets present an abstraction of a asynchronous <em>message queue</em>, with the
+<div class="paragraph"><p>ZeroMQ sockets present an abstraction of a asynchronous <em>message queue</em>, with the
 exact queueing semantics depending on the socket type in use. See
 <a href="zmq_socket.html">zmq_socket(3)</a> for the socket types provided.</p></div>
 <div class="paragraph"><p>The following functions are provided to work with sockets:</p></div>
@@ -957,14 +957,14 @@ Sending and receiving messages
 </dl></div>
 <div class="paragraph"><p>Monitoring socket events:
     <a href="zmq_socket_monitor.html">zmq_socket_monitor(3)</a></p></div>
-<div class="paragraph"><div class="title">Input/output multiplexing</div><p>ØMQ provides a mechanism for applications to multiplex input/output events over
-a set containing both ØMQ sockets and standard sockets. This mechanism mirrors
+<div class="paragraph"><div class="title">Input/output multiplexing</div><p>ZeroMQ provides a mechanism for applications to multiplex input/output events over
+a set containing both ZeroMQ sockets and standard sockets. This mechanism mirrors
 the standard <em>poll()</em> system call, and is described in detail in
 <a href="zmq_poll.html">zmq_poll(3)</a>.</p></div>
 </div>
 <div class="sect2">
 <h3 id="_transports">Transports</h3>
-<div class="paragraph"><p>A ØMQ socket can use multiple different underlying transport mechanisms.
+<div class="paragraph"><p>A ZeroMQ socket can use multiple different underlying transport mechanisms.
 Each transport mechanism is suited to a particular purpose and has its own
 advantages and drawbacks.</p></div>
 <div class="paragraph"><p>The following transport mechanisms are provided:</p></div>
@@ -1005,14 +1005,14 @@ Local in-process (inter-thread) communication transport
 </div>
 <div class="sect2">
 <h3 id="_proxies">Proxies</h3>
-<div class="paragraph"><p>ØMQ provides <em>proxies</em> to create fanout and fan-in topologies. A proxy connects
+<div class="paragraph"><p>ZeroMQ provides <em>proxies</em> to create fanout and fan-in topologies. A proxy connects
 a <em>frontend</em> socket to a <em>backend</em> socket and switches all messages between the
 two sockets, opaquely. A proxy may optionally capture all traffic to a third
 socket. To start a proxy in an application thread, use <a href="zmq_proxy.html">zmq_proxy(3)</a>.</p></div>
 </div>
 <div class="sect2">
 <h3 id="_security">Security</h3>
-<div class="paragraph"><p>A ØMQ socket can select a security mechanism. Both peers must use the same
+<div class="paragraph"><p>A ZeroMQ socket can select a security mechanism. Both peers must use the same
 security mechanism.</p></div>
 <div class="paragraph"><p>The following security mechanisms are provided for IPC and TCP connections:</p></div>
 <div class="dlist"><dl>
@@ -1053,15 +1053,15 @@ Elliptic curve authentication and encryption
 <div class="sect1">
 <h2 id="_error_handling">ERROR HANDLING</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The ØMQ library functions handle errors using the standard conventions found on
-POSIX systems. Generally, this means that upon failure a ØMQ library function
+<div class="paragraph"><p>The ZeroMQ library functions handle errors using the standard conventions found on
+POSIX systems. Generally, this means that upon failure a ZeroMQ library function
 shall return either a NULL value (if returning a pointer) or a negative value
 (if returning an integer), and the actual error code shall be stored in the
 <em>errno</em> variable.</p></div>
 <div class="paragraph"><p>On non-POSIX systems some users may experience issues with retrieving the
 correct value of the <em>errno</em> variable. The <em>zmq_errno()</em> function is provided
 to assist in these cases; for details refer to <a href="zmq_errno.html">zmq_errno(3)</a>.</p></div>
-<div class="paragraph"><p>The <em>zmq_strerror()</em> function is provided to translate ØMQ-specific error codes
+<div class="paragraph"><p>The <em>zmq_strerror()</em> function is provided to translate ZeroMQ-specific error codes
 into error message strings; for details refer to <a href="zmq_strerror.html">zmq_strerror(3)</a>.</p></div>
 </div>
 </div>
@@ -1071,7 +1071,7 @@ into error message strings; for details refer to <a href="zmq_strerror.html">zmq
 <div class="paragraph"><p>The following miscellaneous functions are provided:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Report ØMQ library version
+Report ZeroMQ library version
 </dt>
 <dd>
 <p>
@@ -1084,27 +1084,27 @@ Report ØMQ library version
 <div class="sect1">
 <h2 id="_language_bindings">LANGUAGE BINDINGS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The ØMQ library provides interfaces suitable for calling from programs in any
+<div class="paragraph"><p>The ZeroMQ library provides interfaces suitable for calling from programs in any
 language; this documentation documents those interfaces as they would be used
-by C programmers. The intent is that programmers using ØMQ from other languages
+by C programmers. The intent is that programmers using ZeroMQ from other languages
 shall refer to this documentation alongside any documentation provided by the
 vendor of their language binding.</p></div>
 <div class="paragraph"><p>Language bindings (C++, Python, PHP, Ruby, Java and more) are provided by
-members of the ØMQ community and pointers can be found on the ØMQ website.</p></div>
+members of the ZeroMQ community and pointers can be found on the ZeroMQ website.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_resources">RESOURCES</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Main web site: <a href="http://www.zeromq.org/">http://www.zeromq.org/</a></p></div>
-<div class="paragraph"><p>Report bugs to the ØMQ development mailing list: &lt;<a href="mailto:zeromq-dev@lists.zeromq.org">zeromq-dev@lists.zeromq.org</a>&gt;</p></div>
+<div class="paragraph"><p>Report bugs to the ZeroMQ development mailing list: &lt;<a href="mailto:zeromq-dev@lists.zeromq.org">zeromq-dev@lists.zeromq.org</a>&gt;</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -1112,14 +1112,14 @@ read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contrib
 <div class="sectionbody">
 <div class="paragraph"><p>Free use of this software is granted under the terms of the GNU Lesser General
 Public License (LGPL). For details see the files <tt>COPYING</tt> and <tt>COPYING.LESSER</tt>
-included with the ØMQ distribution.</p></div>
+included with the ZeroMQ distribution.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

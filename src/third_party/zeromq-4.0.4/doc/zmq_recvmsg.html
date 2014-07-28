@@ -783,8 +783,8 @@ function shall fail with <em>errno</em> set to EAGAIN.
 </div>
 <div class="sect2">
 <h3 id="_multi_part_messages">Multi-part messages</h3>
-<div class="paragraph"><p>A ØMQ message is composed of 1 or more message parts. Each message
-part is an independent <em>zmq_msg_t</em> in its own right. ØMQ ensures atomic
+<div class="paragraph"><p>A ZeroMQ message is composed of 1 or more message parts. Each message
+part is an independent <em>zmq_msg_t</em> in its own right. ZeroMQ ensures atomic
 delivery of messages: peers shall receive either all <em>message parts</em> of a
 message or none at all. The total number of message parts is unlimited except
 by available memory.</p></div>
@@ -838,7 +838,7 @@ socket types that switch between several states, such as ZMQ_REP.  See the
 </dt>
 <dd>
 <p>
-The ØMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
+The ZeroMQ <em>context</em> associated with the specified <em>socket</em> was terminated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -919,15 +919,15 @@ do {
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>

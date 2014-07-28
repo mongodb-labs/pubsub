@@ -756,7 +756,7 @@ transport of data over IP networks.</p></div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>ØMQ implements two variants of PGM, the standard protocol where PGM datagrams
+<div class="paragraph"><p>ZeroMQ implements two variants of PGM, the standard protocol where PGM datagrams
 are layered directly on top of IP datagrams as defined by RFC 3208 (the <em>pgm</em>
 transport) and "Encapsulated PGM" or EPGM where PGM datagrams are encapsulated
 inside UDP datagrams (the <em>epgm</em> transport).</p></div>
@@ -782,7 +782,7 @@ not require any special privileges.</td>
 <div class="sect1">
 <h2 id="_addressing">ADDRESSING</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>A ØMQ endpoint is a string consisting of a <em>transport</em><tt>://</tt> followed by an
+<div class="paragraph"><p>A ZeroMQ endpoint is a string consisting of a <em>transport</em><tt>://</tt> followed by an
 <em>address</em>. The <em>transport</em> specifies the underlying protocol to use. The
 <em>address</em> specifies the transport-specific address to connect to.</p></div>
 <div class="paragraph"><p>For the PGM transport, the transport is <tt>pgm</tt>, and for the EPGM protocol the
@@ -827,15 +827,15 @@ representation.</p></div>
 <div class="sect1">
 <h2 id="_wire_format">WIRE FORMAT</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Consecutive PGM datagrams are interpreted by ØMQ as a single continuous stream
-of data where ØMQ messages are not necessarily aligned with PGM datagram
-boundaries and a single ØMQ message may span several PGM datagrams. This stream
-of data consists of ØMQ messages encapsulated in <em>frames</em> as described in
+<div class="paragraph"><p>Consecutive PGM datagrams are interpreted by ZeroMQ as a single continuous stream
+of data where ZeroMQ messages are not necessarily aligned with PGM datagram
+boundaries and a single ZeroMQ message may span several PGM datagrams. This stream
+of data consists of ZeroMQ messages encapsulated in <em>frames</em> as described in
 <a href="zmq_tcp.html">zmq_tcp(7)</a>.</p></div>
 <div class="sect2">
 <h3 id="_pgm_datagram_payload">PGM datagram payload</h3>
 <div class="paragraph"><p>The following ABNF grammar represents the payload of a single PGM datagram as
-used by ØMQ:</p></div>
+used by ZeroMQ:</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><tt>datagram               = (offset data)
@@ -858,7 +858,7 @@ in the packet.</p></div>
 | offset (16 bits) |         data         |
 +------------------+----------------------+</tt></pre>
 </div></div>
-<div class="paragraph"><p>The following diagram further illustrates how three example ØMQ frames are laid
+<div class="paragraph"><p>The following diagram further illustrates how three example ZeroMQ frames are laid
 out in consecutive PGM datagram payloads:</p></div>
 <div class="literalblock">
 <div class="content">
@@ -916,15 +916,15 @@ assert (rc == 0);</tt></pre>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This page was written by the ØMQ community. To make a change please
-read the ØMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
+<div class="paragraph"><p>This page was written by the ZeroMQ community. To make a change please
+read the ZeroMQ Contribution Policy at <a href="http://www.zeromq.org/docs:contributing">http://www.zeromq.org/docs:contributing</a>.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-ØMQ 4.0.4<br />
+ZeroMQ 4.0.4<br />
 Last updated 2013-11-13 18:57:50 CET
 </div>
 </div>
