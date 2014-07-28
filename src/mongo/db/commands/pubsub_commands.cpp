@@ -50,6 +50,9 @@ namespace mongo {
         const std::string kSubscribeField = "subscribe";
         const std::string kPollField = "poll";
         const std::string kTimeoutField = "timeout";
+        const std::string kMillisPolledField = "millisPolled";
+        const std::string kPollAgainField = "pollAgain";
+        const std::string kMessagesField = "messages";
         const std::string kErrorField = "errors";
         const std::string kUnsubscribeField = "unsubscribe";
 
@@ -296,11 +299,44 @@ namespace mongo {
                 }
             }
 
-            BSONObjBuilder errors;
-            PubSub::poll(oids, timeout, result, errors);
+            long long millisPolled = 0;
+            bool pollAgain = false;
+            std::map<SubscriptionId, std::string> errors;
+            std::priority_queue<SubscriptionMessage> messages = PubSub::poll(oids, timeout, millisPolled, pollAgain, errors);
 
-            if (errors.asTempObj().nFields() > 0)
-                result.append(kErrorField, errors.obj());
+            // serialize messages into BSON
+            BSONObjBuilder messagesBuilder;
+            while (!messages.empty()) {
+                SubscriptionMessage sm = messages.top();
+                SubscriptionId currId = sm.subscriptionId;
+                BSONObjBuilder channelBuilder;
+                while (!messages.empty() && sm.subscriptionId == currId) {
+                    std::string currChannel = sm.channel;
+                    BSONArrayBuilder arrayBuilder;
+                    while (sm.channel == currChannel) {
+                        arrayBuilder.append(sm.message);
+                        messages.pop();
+                        if (messages.empty())
+                            break;
+                        sm = messages.top();
+                    }
+                    channelBuilder.append(currChannel, arrayBuilder.arr());
+                }
+                messagesBuilder.append(currId.toString(), channelBuilder.obj());
+            }
+
+            result.append(kMessagesField, messagesBuilder.obj());
+            result.append(kMillisPolledField, millisPolled);
+            if (pollAgain)
+                result.append(kPollAgainField, true);
+
+            if (errors.size() > 0) {
+                BSONObjBuilder errorBuilder;
+                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin(); it != errors.end(); it++) {
+                    errorBuilder.append(it->first.toString(), it->second);
+                }
+                result.append(kErrorField, errorBuilder.obj());
+            }
 
             return true;
         }
@@ -356,14 +392,19 @@ namespace mongo {
             std::set<OID> oids;
             validate(oidElement, oids);
 
-            BSONObjBuilder errors;
+            std::map<SubscriptionId, std::string> errors;
             for (std::set<OID>::iterator it = oids.begin(); it != oids.end(); it++) {
                 OID oid = *it;
                 PubSub::unsubscribe(oid, errors);
             }
 
-            if (errors.asTempObj().nFields() > 0)
-                result.append(kErrorField, errors.obj());
+            if (errors.size() > 0) {
+                BSONObjBuilder errorBuilder;
+                for (std::map<SubscriptionId, std::string>::iterator it = errors.begin(); it != errors.end(); it++) {
+                    errorBuilder.append(it->first.toString(), it->second);
+                }
+                result.append(kErrorField, errorBuilder.obj());
+            }
 
             return true;
         }

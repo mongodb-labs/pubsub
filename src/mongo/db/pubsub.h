@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <queue>
 #include <zmq.hpp>
 
 #include "mongo/bson/oid.h"
@@ -38,16 +39,37 @@ namespace mongo {
 
     typedef OID SubscriptionId;
 
+    // contains information about a message
+    class SubscriptionMessage {
+    public:
+        SubscriptionId subscriptionId;
+        std::string channel;
+        BSONObj message;
+
+        SubscriptionMessage(SubscriptionId _subscriptionId, std::string _channel, BSONObj _message) {
+            subscriptionId = _subscriptionId;
+            channel = _channel;
+            message = _message;
+        }
+
+        friend bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2) {
+            if (m1.subscriptionId < m2.subscriptionId)
+                return true;
+            if (m1.subscriptionId == m2.subscriptionId && m1.channel < m2.channel)
+                return true;
+            return false;
+        }
+    };
+
     class PubSub {
     public:
 
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
         static SubscriptionId subscribe(const string& channel);
-        static void poll(std::set<SubscriptionId>& subscriptionIds, long timeout,
-                         BSONObjBuilder& result, BSONObjBuilder& errors);
+        static std::priority_queue<SubscriptionMessage> poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled, bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
         static void unsubscribe(const SubscriptionId& subscriptionId,
-                                BSONObjBuilder& errors, bool force=false);
+                                std::map<SubscriptionId, std::string>& errors, bool force=false);
 
         // to be included in all files using the client's sub sockets
         static const char* const kIntPubsubEndpoint;
@@ -67,11 +89,6 @@ namespace mongo {
         // connections modifiers
         static void updateReplSetMember(HostAndPort hp);
         static void pruneReplSetMembers();
-
-        struct Message {
-
-        };
-
 
     private:
 
@@ -122,12 +139,11 @@ namespace mongo {
                                      std::vector<zmq::pollitem_t>& items,
                                      std::vector<std::pair<SubscriptionId,
                                                            SubscriptionInfo*> >& subs,
-                                     BSONObjBuilder& errors);
+                                     std::map<SubscriptionId, std::string>& errors);
 
         // This method receives messages on all subscriptions passed in. In the event of an error,
         // this method inserts an error message in the errors map for the given SubscriptionId.
-        static BSONObj recvMessages(std::vector<std::pair<SubscriptionId,
-                                                          SubscriptionInfo*> >& subs);
+        static std::priority_queue<SubscriptionMessage> recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs, std::map<SubscriptionId, std::string>& errors);
     };
 
 }  // namespace mongo

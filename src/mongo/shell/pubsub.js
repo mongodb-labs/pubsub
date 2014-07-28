@@ -23,7 +23,9 @@ ps.publish = function(channel, message) {
     if (messageType != "object")
         throw Error("The message argument to the publish command must be a document but was a " +
                      messageType);
-    return assert.commandWorked(db.runCommand({ publish: 1, channel: channel, message: message }));
+    var res = db.runCommand({ publish: channel, message: message });
+    assert.commandWorked(res);
+    return res;
 }
 
 ps.subscribe = function(channel) {
@@ -31,9 +33,11 @@ ps.subscribe = function(channel) {
     if (channelType != "string")
         throw Error("The channel argument to the subscribe command must be a string but was a " +
                      channelType);
-    var sub_id = assert.commandWorked(db.runCommand({ subscribe: 1, channel: channel }))['sub_id'];
-    this._allSubscriptions.push(sub_id);
-    return sub_id;
+    var res = db.runCommand({ subscribe: channel });
+    assert.commandWorked(res)
+    var subscriptionId = res['subscriptionId'];
+    this._allSubscriptions.push(subscriptionId);
+    return subscriptionId;
 }
 
 ps.poll = function(id, timeout) {
@@ -41,9 +45,11 @@ ps.poll = function(id, timeout) {
     if (timeoutType != "undefined" && timeoutType != "number")
         throw Error("The timeout argument to the poll command must be " +
                     "a number but was a " + timeoutType);
-    var dbCommand = { poll: 1, sub_id: id };
+    var dbCommand = { poll: id };
     if (timeout) dbCommand.timeout = timeout;
-    return assert.commandWorked(db.runCommand(dbCommand));
+    var res = db.runCommand(dbCommand);
+    assert.commandWorked(res);
+    return res;
 }
 
 ps.pollAll = function(timeout) {
@@ -51,25 +57,28 @@ ps.pollAll = function(timeout) {
     if (timeoutType != "undefined" && timeoutType != "number")
         throw Error("The timeout argument to the poll command must be a " +
                     "number but was a " + timeoutType);
-    var dbCommand = { poll: 1, sub_id: this._allSubscriptions };
+    var dbCommand = { poll: this._allSubscriptions };
     if (timeout) dbCommand.timeout = timeout;
-    return assert.commandWorked(db.runCommand(dbCommand));
+    var res = db.runCommand(dbCommand);
+    assert.commandWorked(res);
+    return res;
 }
 
 ps.unsubscribe = function(id) {
     idType = typeof id;
     if (idType != "object" && idType != "array")
-        throw Error("The sub_id argument to the unsubscribe command must be " +
+        throw Error("The subscriptionId argument to the unsubscribe command must be " +
                     "an object or array but was a " + idType);
-    var res = assert.commandWorked(db.runCommand({ unsubscribe: 1, sub_id: id }));
+    var res = db.runCommand({ unsubscribe: id });
+    assert.commandWorked(res);
     var idx = this._allSubscriptions.indexOf(id);
     this._allSubscriptions.splice(idx, 1);
     return res;
 }
 
 ps.unsubscribeAll = function() {
-    var res = assert.commandWorked(db.runCommand({ unsubscribe: 1,
-                                                   sub_id: this._allSubscriptions }));
+    var res = db.runCommand({ unsubscribe: this._allSubscriptions });
+    assert.commandWorked(res);
     this._allSubscriptions = [];
-    return res;
+    return res
 }
