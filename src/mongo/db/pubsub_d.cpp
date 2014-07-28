@@ -93,10 +93,10 @@ namespace mongo {
                     PubSub::extSendSocket->connect(kExtPubEndpoint.c_str());
 
                     // automatically proxy messages from SUB endpoint to client sub sockets
-                    PubSub::intPubSocket.bind(PubSub::kIntPubsubEndpoint);
+                    PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
                 } catch (zmq::error_t& e) {
                     // TODO: turn off pubsub if connection here fails
-                    log() << "Could not initialize pubsub sockets: " << causedBy(e) << endl;
+                    log() << "Could not initialize PubSub sockets: " << causedBy(e) << endl;
                 }
 
                 // proxy incoming messages to internal publisher to be received by clients

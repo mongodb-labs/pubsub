@@ -72,7 +72,7 @@ namespace mongo {
                                 std::map<SubscriptionId, std::string>& errors, bool force=false);
 
         // to be included in all files using the client's sub sockets
-        static const char* const kIntPubsubEndpoint;
+        static const char* const kIntPubSubEndpoint;
 
         // process-specific (mongod or mongos) initialization of internal communication sockets
         static zmq::socket_t* initSendSocket();
@@ -96,7 +96,9 @@ namespace mongo {
         struct SubscriptionInfo {
             zmq::socket_t* sock;
 
-            // if currently polling, all other polls return error
+            // If currently polling, all other polls return error. Set in checkoutSocket
+            // (which locks the map of all subscriptions) to ensure that sockets are only
+            // used by one thread at a time.
             int inUse : 1;
 
             // Set to indicate the subscription is invalid, and should be disposed of at the
@@ -105,7 +107,7 @@ namespace mongo {
             int shouldUnsub : 1;
 
             // Signifies that the subscription has been polled recently and is therefore
-            // still alive. Used to clean up subscriptions that are abandoned
+            // still alive. Used to clean up subscriptions that are abandoned.
             int polledRecently : 1;
         };
 
@@ -140,6 +142,14 @@ namespace mongo {
                                      std::vector<std::pair<SubscriptionId,
                                                            SubscriptionInfo*> >& subs,
                                      std::map<SubscriptionId, std::string>& errors);
+
+        // Methods to check subscriptions and their corresponding sockets in and out to ensure
+        // thread safe use. If you check out a socket, you are guaranteed that no other threads
+        // can check out the socket until you check it back in. This is acheived by setting
+        // and checkingthe bits in the SubscriptionInfo struct. If there is an error
+        // checking a socket out, checkoutSocket returns NULL and sets the error message.
+        static SubscriptionInfo* checkoutSocket(SubscriptionId subscriptionId, std::string& errmsg);
+        static void checkinSocket(SubscriptionInfo* s);
 
         // This method receives messages on all subscriptions passed in. In the event of an error,
         // this method inserts an error message in the errors map for the given SubscriptionId.

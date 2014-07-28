@@ -75,7 +75,7 @@ namespace mongo {
 
             try {
                 // publishes to client subscribe sockets
-                PubSub::intPubSocket.bind(PubSub::kIntPubsubEndpoint);
+                PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
             } catch (zmq::error_t& e) {
                 // TODO: turn off pubsub if connection here fails
                 log() << "Error binding publish socket." << causedBy(e) << endl;

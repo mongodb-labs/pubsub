@@ -55,7 +55,7 @@ namespace mongo {
      * "push" information to a queue shared between the 3 config servers.
      */
 
-    const char* const PubSub::kIntPubsubEndpoint = "inproc://pubsub";
+    const char* const PubSub::kIntPubSubEndpoint = "inproc://pubsub";
 
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
@@ -178,7 +178,7 @@ namespace mongo {
         zmq::socket_t* subSocket;
         try {
             subSocket = new zmq::socket_t(zmqContext, ZMQ_SUB);
-            subSocket->connect(PubSub::kIntPubsubEndpoint);
+            subSocket->connect(PubSub::kIntPubSubEndpoint);
             subSocket->setsockopt(ZMQ_SUBSCRIBE, channel.c_str(), channel.length());
         } catch (zmq::error_t& e) {
             uassert(18539, e.what(), false);
@@ -234,6 +234,7 @@ namespace mongo {
                     }
                 }
 
+                // If all sockets that were polling are unsubscribed, return
                 if (items.size() == 0) {
                     millisPolled = pollRuntime;
                     return messages;
@@ -273,8 +274,7 @@ namespace mongo {
              subIt != subs.end();
              ++subIt) {
             SubscriptionInfo* s = subIt->second;
-            s->polledRecently = 1;
-            s->inUse = 0;
+            PubSub::checkinSocket(s);
         }
     }
 
@@ -282,33 +282,51 @@ namespace mongo {
                                   std::vector<zmq::pollitem_t>& items,
                                   std::vector<std::pair<OID, SubscriptionInfo*> >& subs,
                                   std::map<SubscriptionId, std::string>& errors) {
-        SimpleMutex::scoped_lock lk(mapMutex);
-
         // check if each oid is for a valid subscription.
-        // for each oid already in an active poll, set an errmsg
+        // for each oid already in an active poll, set an error message
         // for each non-active oid, set active poll and create a poller
         for (std::set<SubscriptionId>::iterator it = subscriptionIds.begin();
              it != subscriptionIds.end();
              it++) {
+
             SubscriptionId subscriptionId = *it;
-            std::map<SubscriptionId, SubscriptionInfo*>::iterator subIt =
+            std::string errmsg;
+            SubscriptionInfo* s = PubSub::checkoutSocket(subscriptionId, errmsg);
+
+            if (s == NULL) {
+                errors.insert(std::make_pair(subscriptionId, errmsg));
+                continue;
+            }
+
+            // create subscription info and poll item for socket.
+            // items and subs have corresponding info at the same indexes
+            zmq::pollitem_t pollItem = { *(s->sock), 0, ZMQ_POLLIN, 0 };
+            items.push_back(pollItem);
+            subs.push_back(std::make_pair(subscriptionId, s));
+        }
+    }
+
+    PubSub::SubscriptionInfo* PubSub::checkoutSocket(SubscriptionId subscriptionId, std::string& errmsg) {
+        SimpleMutex::scoped_lock lk(mapMutex);
+        std::map<SubscriptionId, SubscriptionInfo*>::iterator subIt =
                                                                 subscriptions.find(subscriptionId);
 
-            if (subIt == subscriptions.end() || subIt->second->shouldUnsub) {
-                errors.insert(std::make_pair(subscriptionId, "Subscription not found."));
-            } else if (subIt->second->inUse) {
-                errors.insert(std::make_pair(subscriptionId, "Poll currently active."));
-            } else {
-                SubscriptionInfo* s = subIt->second;
-
-                s->inUse = 1;
-
-                // items and subs have corresponding info at the same indexes
-                zmq::pollitem_t pollItem = { *(s->sock), 0, ZMQ_POLLIN, 0 };
-                items.push_back(pollItem);
-                subs.push_back(std::make_pair(subscriptionId, s));
-            }
+        if (subIt == subscriptions.end() || subIt->second->shouldUnsub) {
+            errmsg = "Subscription not found.";
+            return NULL;
+        } else if (subIt->second->inUse) {
+            errmsg = "Poll currently active.";
+            return NULL;
+        } else {
+            SubscriptionInfo* s = subIt->second;
+            s->inUse = 1;
+            return s;
         }
+    }
+
+    void PubSub::checkinSocket(SubscriptionInfo* s) {
+        s->polledRecently = 1;
+        s->inUse = 0;
     }
 
     std::priority_queue<SubscriptionMessage> PubSub::recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs, std::map<SubscriptionId, std::string>& errors) {
@@ -344,8 +362,7 @@ namespace mongo {
             }
 
             // done receiving from ZMQ socket
-            s->polledRecently = 1;
-            s->inUse = 0;
+            PubSub::checkinSocket(s);
         }
 
         return outbox;
@@ -392,7 +409,7 @@ namespace mongo {
             try {
                 SimpleMutex::scoped_lock lk(sendMutex);
                 PubSub::extSendSocket->connect(endpoint.c_str());
-                log() << "Pubsub connected to new replica set member." << endl;
+                log() << "PubSub connected to new replica set member." << endl;
             } catch (zmq::error_t& e) {
                 log() << "Error connecting to replica set member." << causedBy(e) << endl;
             }
@@ -414,7 +431,7 @@ namespace mongo {
                 try {
                     SimpleMutex::scoped_lock lk(sendMutex);
                     PubSub::extSendSocket->disconnect(endpoint.c_str());
-                    log() << "Pubsub disconnected from replica set member." << endl;
+                    log() << "PubSub disconnected from replica set member." << endl;
                 } catch (zmq::error_t& e) {
                     log() << "Error disconnecting from replica set member." << causedBy(e) << endl;
                 }
