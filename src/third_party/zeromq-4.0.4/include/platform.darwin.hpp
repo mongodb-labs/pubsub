@@ -225,16 +225,16 @@
 #define ZMQ_HAVE_SO_KEEPALIVE 1
 
 /* Whether TCP_KEEPALIVE is supported. */
-#define ZMQ_HAVE_TCP_KEEPALIVE 1
+#define ZMQ_HAVE_TCP_KEEPALIVE 0 
 
 /* Whether TCP_KEEPCNT is supported. */
-#define ZMQ_HAVE_TCP_KEEPCNT 1
+/* #undef ZMQ_HAVE_TCP_KEEPCNT 1 */
 
 /* Whether TCP_KEEPIDLE is supported. */
 /* #undef ZMQ_HAVE_TCP_KEEPIDLE */
 
 /* Whether TCP_KEEPINTVL is supported. */
-#define ZMQ_HAVE_TCP_KEEPINTVL 1
+/* #undef ZMQ_HAVE_TCP_KEEPINTVL 1 */
 
 /* Have uio.h header. */
 #define ZMQ_HAVE_UIO 1
