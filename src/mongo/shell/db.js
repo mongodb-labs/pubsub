@@ -73,7 +73,7 @@ DB.prototype._adminCommand = DB.prototype.adminCommand; // alias old name
     <ul>
     <li>
         size: desired initial extent size for the collection.  Must be <= 1000000000.
-              for fixed size (capped) collections, this size is the total/max size of the
+              for fixed size (capped) collections, this size is the total/max size of the 
               collection.
     </li>
     <li>
@@ -86,7 +86,7 @@ DB.prototype._adminCommand = DB.prototype.adminCommand; // alias old name
     <p>Example:</p>
     <code>db.createCollection("movies", { size: 10 * 1024 * 1024, capped:true } );</code>
 
- * @param {String} name Name of new collection to create
+ * @param {String} name Name of new collection to create 
  * @param {Object} options Object with options for call.  Options are listed above.
  * @return SOMETHING_FIXME
 */
@@ -101,7 +101,7 @@ DB.prototype.createCollection = function(name, opt) {
         cmd.capped = options.capped;
     if (options.size != undefined)
         cmd.size = options.size;
-    if (options.usePowerOf2Sizes != undefined)
+    if (options.usePowerOf2Sizes != undefined) 
         cmd.flags = options.usePowerOf2Sizes ? 1 : 0;
     var res = this._dbCommand(cmd);
     return res;
@@ -176,19 +176,19 @@ DB.prototype.shutdownServer = function(opts) {
 /**
   Clone database on another server to here.
   <p>
-  Generally, you should dropDatabase() first as otherwise the cloned information will MERGE
-  into whatever data is already present in this database.  (That is however a valid way to use
+  Generally, you should dropDatabase() first as otherwise the cloned information will MERGE 
+  into whatever data is already present in this database.  (That is however a valid way to use 
   clone if you are trying to do something intentionally, such as union three non-overlapping
   databases into one.)
   <p>
   This is a low level administrative function will is not typically used.
 
- * @param {String} from Where to clone from (dbhostname[:port]).  May not be this database
+ * @param {String} from Where to clone from (dbhostname[:port]).  May not be this database 
                    (self) as you cannot clone to yourself.
  * @return Object returned has member ok set to true if operation succeeds, false otherwise.
  * See also: db.copyDatabase()
  */
-DB.prototype.cloneDatabase = function(from) {
+DB.prototype.cloneDatabase = function(from) { 
     assert( isString(from) && from.length );
     return this._dbCommand( { clone: from } );
 }
@@ -197,13 +197,13 @@ DB.prototype.cloneDatabase = function(from) {
 /**
  Clone collection on another server to here.
  <p>
- Generally, you should drop() first as otherwise the cloned information will MERGE
- into whatever data is already present in this collection.  (That is however a valid way to use
+ Generally, you should drop() first as otherwise the cloned information will MERGE 
+ into whatever data is already present in this collection.  (That is however a valid way to use 
  clone if you are trying to do something intentionally, such as union three non-overlapping
  collections into one.)
  <p>
  This is a low level administrative function is not typically used.
-
+ 
  * @param {String} from mongod instance from which to clnoe (dbhostname:port).  May
  not be this mongod instance, as clone from self is not allowed.
  * @param {String} collection name of collection to clone.
@@ -211,7 +211,7 @@ DB.prototype.cloneDatabase = function(from) {
  * @return Object returned has member ok set to true if operation succeeds, false otherwise.
  * See also: db.cloneDatabase()
  */
-DB.prototype.cloneCollection = function(from, collection, query) {
+DB.prototype.cloneCollection = function(from, collection, query) { 
     assert( isString(from) && from.length );
     assert( isString(collection) && collection.length );
     collection = this._name + "." + collection;
@@ -223,24 +223,24 @@ DB.prototype.cloneCollection = function(from, collection, query) {
 /**
   Copy database from one server or name to another server or name.
 
-  Generally, you should dropDatabase() first as otherwise the copied information will MERGE
-  into whatever data is already present in this database (and you will get duplicate objects
+  Generally, you should dropDatabase() first as otherwise the copied information will MERGE 
+  into whatever data is already present in this database (and you will get duplicate objects 
   in collections potentially.)
 
-  For security reasons this function only works when executed on the "admin" db.  However,
+  For security reasons this function only works when executed on the "admin" db.  However, 
   if you have access to said db, you can copy any database from one place to another.
 
-  This method provides a way to "rename" a database by copying it to a new db name and
+  This method provides a way to "rename" a database by copying it to a new db name and 
   location.  Additionally, it effectively provides a repair facility.
 
   * @param {String} fromdb database name from which to copy.
   * @param {String} todb database name to copy to.
-  * @param {String} fromhost hostname of the database (and optionally, ":port") from which to
+  * @param {String} fromhost hostname of the database (and optionally, ":port") from which to 
                     copy the data.  default if unspecified is to copy from self.
   * @return Object returned has member ok set to true if operation succeeds, false otherwise.
   * See also: db.clone()
 */
-DB.prototype.copyDatabase = function(fromdb, todb, fromhost, username, password) {
+DB.prototype.copyDatabase = function(fromdb, todb, fromhost, username, password) { 
     assert( isString(fromdb) && fromdb.length );
     assert( isString(todb) && todb.length );
     fromhost = fromhost || "";
@@ -254,7 +254,7 @@ DB.prototype.copyDatabase = function(fromdb, todb, fromhost, username, password)
 
 /**
   Repair database.
-
+ 
  * @return Object returned has member ok set to true if operation succeeds, false otherwise.
 */
 DB.prototype.repairDatabase = function() {
@@ -289,7 +289,7 @@ DB.prototype.help = function() {
     print("\tdb.getReplicationInfo()");
     print("\tdb.getSiblingDB(name) get the db at the same server as this one");
     print("\tdb.getWriteConcern() - returns the write concern used for any operations on this db, inherited from server object if set");
-    print("\tdb.hostInfo() get details about the server's host");
+    print("\tdb.hostInfo() get details about the server's host"); 
     print("\tdb.isMaster() check replica primary status");
     print("\tdb.killOp(opid) kills the current operation in the db");
     print("\tdb.listCommands() lists all the db commands");
@@ -315,8 +315,8 @@ DB.prototype.help = function() {
     return __magicNoPrint;
 }
 
-DB.prototype.printCollectionStats = function(scale) {
-    if (arguments.length > 1) {
+DB.prototype.printCollectionStats = function(scale) { 
+    if (arguments.length > 1) { 
         print("printCollectionStats() has a single optional argument (scale)");
         return;
     }
@@ -342,10 +342,10 @@ DB.prototype.printCollectionStats = function(scale) {
 
 /**
  * <p> Set profiling level for your db.  Profiling gathers stats on query performance. </p>
- *
+ * 
  * <p>Default is off, and resets to off on a database restart -- so if you want it on,
  *    turn it on periodically. </p>
- *
+ *  
  *  <p>Levels :</p>
  *   <ul>
  *    <li>0=off</li>
@@ -356,8 +356,8 @@ DB.prototype.printCollectionStats = function(scale) {
  *  @return SOMETHING_FIXME or null on error
  */
 DB.prototype.setProfilingLevel = function(level,slowms) {
-
-    if (level < 0 || level > 2) {
+    
+    if (level < 0 || level > 2) { 
         var errorText = "input level " + level + " is out of range [0..2]";
         var errorObject = new Error(errorText);
         errorObject['dbSetProfilingException'] = errorText;
@@ -372,7 +372,7 @@ DB.prototype.setProfilingLevel = function(level,slowms) {
 
 /**
  *  <p> Evaluate a js expression at the database server.</p>
- *
+ * 
  * <p>Useful if you need to touch a lot of data lightly; in such a scenario
  *  the network transfer of the data could be a bottleneck.  A good example
  *  is "select count(*)" -- can be done server side via this mechanism.
@@ -382,25 +382,25 @@ DB.prototype.setProfilingLevel = function(level,slowms) {
  * If the eval fails, an exception is thrown of the form:
  * </p>
  * <code>{ dbEvalException: { retval: functionReturnValue, ok: num [, errno: num] [, errmsg: str] } }</code>
- *
+ * 
  * <p>Example: </p>
  * <code>print( "mycount: " + db.eval( function(){db.mycoll.find({},{_id:ObjId()}).length();} );</code>
  *
  * @param {Function} jsfunction Javascript function to run on server.  Note this it not a closure, but rather just "code".
  * @return result of your function, or null if error
- *
+ * 
  */
 DB.prototype.eval = function(jsfunction) {
     var cmd = { $eval : jsfunction };
     if ( arguments.length > 1 ) {
         cmd.args = argumentsToArray( arguments ).slice(1);
     }
-
+    
     var res = this._dbCommand( cmd );
-
+    
     if (!res.ok)
         throw tojson( res );
-
+    
     return res.retval;
 }
 
@@ -408,7 +408,7 @@ DB.prototype.dbEval = DB.prototype.eval;
 
 
 /**
- *
+ * 
  *  <p>
  *   Similar to SQL group by.  For example: </p>
  *
@@ -417,7 +417,7 @@ DB.prototype.dbEval = DB.prototype.eval;
  *  <p>
  *    corresponds to the following in 10gen:
  *  </p>
- *
+ * 
  *  <code>
     db.group(
         {
@@ -430,7 +430,7 @@ DB.prototype.dbEval = DB.prototype.eval;
         });
     </code>
  *
- *
+ * 
  * <p>
  *  An array of grouped items is returned.  The array must fit in RAM, thus this function is not
  * suitable when the return set is extremely large.
@@ -538,7 +538,7 @@ DB.prototype.getLastErrorCmd = DB.prototype.getLastErrorObj;
 
 /* Return the last error which has occurred, even if not the very last error.
 
-   Returns:
+   Returns: 
     { err : <error message>, nPrev : <how_many_ops_back_occurred>, ok : 1 }
 
    result.err will be null if no error has occurred.
@@ -551,17 +551,17 @@ DB.prototype.getCollectionNames = function(){
     var all = [];
 
     var nsLength = this._name.length + 1;
-
+    
     var c = this.getCollection( "system.namespaces" ).find();
     while ( c.hasNext() ){
         var name = c.next().name;
-
+        
         if ( name.indexOf( "$" ) >= 0 && name.indexOf( ".oplog.$" ) < 0 )
             continue;
-
+        
         all.push( name.substring( nsLength ) );
     }
-
+    
     return all.sort();
 }
 
@@ -588,7 +588,7 @@ DB.prototype.currentOp = function( arg ){
 DB.prototype.currentOP = DB.prototype.currentOp;
 
 DB.prototype.killOp = function(op) {
-    if( !op )
+    if( !op ) 
         throw "no opNum to kill specified";
     return this.$cmd.sys.killop.findOne({'op':op});
 }
@@ -600,7 +600,7 @@ DB.tsToSeconds = function(x){
     return x / 4294967296; // low 32 bits are ordinal #s within a second
 }
 
-/**
+/** 
   Get a replication log information summary.
   <p>
   This command is for the database/cloud administer and not applicable to most databases.
@@ -609,15 +609,15 @@ DB.tsToSeconds = function(x){
        use local
        db.getReplicationInfo();
   </pre>
-  It is assumed that this database is a replication master -- the information returned is
-  about the operation log stored at local.oplog.$main on the replication master.  (It also
-  works on a machine in a replica pair: for replica pairs, both machines are "masters" from
+  It is assumed that this database is a replication master -- the information returned is 
+  about the operation log stored at local.oplog.$main on the replication master.  (It also 
+  works on a machine in a replica pair: for replica pairs, both machines are "masters" from 
   an internal database perspective.
   <p>
-  * @return Object timeSpan: time span of the oplog from start to end  if slave is more out
+  * @return Object timeSpan: time span of the oplog from start to end  if slave is more out 
   *                          of date than that, it can't recover without a complete resync
 */
-DB.prototype.getReplicationInfo = function() {
+DB.prototype.getReplicationInfo = function() { 
     var db = this.getSiblingDB("local");
 
     var result = { };
@@ -647,7 +647,7 @@ DB.prototype.getReplicationInfo = function() {
 
     var firstc = ol.find().sort({$natural:1}).limit(1);
     var lastc = ol.find().sort({$natural:-1}).limit(1);
-    if( !firstc.hasNext() || !lastc.hasNext() ) {
+    if( !firstc.hasNext() || !lastc.hasNext() ) { 
         result.errmsg = "objects not found in local.oplog.$main -- is this a new and empty db instance?";
         result.oplogMainRowCount = ol.count();
         return result;
@@ -658,8 +658,8 @@ DB.prototype.getReplicationInfo = function() {
     var tfirst = first.ts;
     var tlast = last.ts;
 
-    if( tfirst && tlast ) {
-        tfirst = DB.tsToSeconds( tfirst );
+    if( tfirst && tlast ) { 
+        tfirst = DB.tsToSeconds( tfirst ); 
         tlast = DB.tsToSeconds( tlast );
         result.timeDiff = tlast - tfirst;
         result.timeDiffHours = Math.round(result.timeDiff / 36)/100;
@@ -667,7 +667,7 @@ DB.prototype.getReplicationInfo = function() {
         result.tLast  = (new Date(tlast*1000)).toString();
         result.now = Date();
     }
-    else {
+    else { 
         result.errmsg = "ts element not found in oplog objects";
     }
 
@@ -734,7 +734,7 @@ DB.prototype.printSlaveReplicationInfo = function() {
         if ( x.state == 1 || x.state == 7 ) {  // ignore primaries (1) and arbiters (7)
             return;
         }
-
+        
         print("source: " + x.name);
         if ( x.optime ) {
             getReplLag(x.optimeDate);
@@ -743,12 +743,12 @@ DB.prototype.printSlaveReplicationInfo = function() {
             print( "\tno replication info, yet.  State: " + x.stateStr );
         }
     };
-
+    
     var L = this.getSiblingDB("local");
 
     if (L.system.replset.count() != 0) {
         var status = this.adminCommand({'replSetGetStatus' : 1});
-        startOptimeDate = getMaster(status.members).optimeDate;
+        startOptimeDate = getMaster(status.members).optimeDate; 
         status.members.forEach(r);
     }
     else if( L.sources.count() != 0 ) {
@@ -802,7 +802,7 @@ DB.prototype.listCommands = function(){
         s += "\n  ";
         s += c.help.replace(/\n/g, '\n  ');
         s += "\n";
-
+        
         print( s );
     }
 }
@@ -890,12 +890,12 @@ DB.prototype._addUserWithInsert = function(userObj, replicatedTo, timeout) {
     // been fully replicated everywhere, since this will impact security.  By default, replicate to
     // majority of nodes with wtimeout 15 secs, though user can override
     //
-
+    
     replicatedTo = replicatedTo != undefined && replicatedTo != null ? replicatedTo : "majority"
-
+    
     // in mongod version 2.1.0-, this worked
     var le = {};
-    try {
+    try {        
         le = this.getLastErrorObj( replicatedTo, timeout || 30 * 1000 );
         // printjson( le )
     }
@@ -1416,7 +1416,7 @@ DB.prototype.setWriteConcern = function( wc ) {
 DB.prototype.getWriteConcern = function() {
     if (this._writeConcern)
         return this._writeConcern;
-
+    
     if (this._mongo.getWriteConcern())
         return this._mongo.getWriteConcern();
 

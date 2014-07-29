@@ -716,7 +716,7 @@ env.Library('coreshard', ['s/distlock.cpp',
                           's/shardkey.cpp'],
             LIBDEPS=['s/base',
                      's/cluster_ops_impl']);
-
+    
 mongosLibraryFiles = [
     "s/interrupt_status_mongos.cpp",
     "s/strategy.cpp",
@@ -1027,8 +1027,8 @@ env.Library("mongos_options", ["s/mongos_options.cpp"],
 # mongos
 mongos = env.Program(
     "mongos", [ "s/server.cpp", "s/mongos_options_init.cpp", "db/pubsub_s.cpp" ] ,
-    LIBDEPS=["mongoscore", "coreserver", "pubsub", "coredb", "mongocommon", "coreshard", "ntservice",
-             "mongodandmongos", "s/upgrade", "mongos_options", "pubsub" ])
+    LIBDEPS=["mongoscore", "coreserver", "pubsub", "coredb", "mongocommon", "coreshard",
+             "ntservice", "mongodandmongos", "s/upgrade", "mongos_options" ])
 env.Install( '#/', mongos )
 
 env.Library("clientandshell", ["client/clientAndShell.cpp"],
@@ -1083,7 +1083,7 @@ test = testEnv.Install(
 if len(testEnv.subst('$PROGSUFFIX')):
     testEnv.Alias( "test", "#/${PROGPREFIX}test${PROGSUFFIX}" )
 
-env.Install( '#/', testEnv.Program( "perftest", [ "dbtests/perf/perftest.cpp" ], LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub", "testframework", "pubsub" ] ) )
+env.Install( '#/', testEnv.Program( "perftest", [ "dbtests/perf/perftest.cpp" ], LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub", "testframework" ] ) )
 
 # --- sniffer ---
 mongosniff_built = False
@@ -1234,17 +1234,17 @@ if not len(module_banner_filenames) == len(env['MODULE_BANNERS']):
 module_banner_dirs = set([Dir('#').rel_path(f.get_dir()) for f in env['MODULE_BANNERS']])
 module_banner_transforms = ["--transform %s=$SERVER_DIST_BASENAME" % d for d in module_banner_dirs]
 
-# Allow modules to map original file name directories to subdirectories
+# Allow modules to map original file name directories to subdirectories 
 # within the archive (e.g. { "src/mongo/db/modules/enterprise/docs": "snmp"})
 archive_addition_transforms = []
 for full_dir, archive_dir in env["ARCHIVE_ADDITION_DIR_MAP"].items():
-  archive_addition_transforms.append("--transform %s=$SERVER_DIST_BASENAME/%s" %
+  archive_addition_transforms.append("--transform %s=$SERVER_DIST_BASENAME/%s" % 
                                      (full_dir, archive_dir))
 
 env.Command(
     '#/${SERVER_ARCHIVE}',
-    ['#buildscripts/make_archive.py'] + env["MODULE_BANNERS"] + env["ARCHIVE_ADDITIONS"] +
-    distBinaries, ' '.join(['$PYTHON ${SOURCES[0]} -o $TARGET'] + archive_addition_transforms +
+    ['#buildscripts/make_archive.py'] + env["MODULE_BANNERS"] + env["ARCHIVE_ADDITIONS"] + 
+    distBinaries, ' '.join(['$PYTHON ${SOURCES[0]} -o $TARGET'] + archive_addition_transforms + 
     module_banner_transforms + [
             '--transform ${str(Dir(BUILD_DIR))}/mongo/stripped=$SERVER_DIST_BASENAME/bin',
             '--transform ${str(Dir(BUILD_DIR))}/mongo=$SERVER_DIST_BASENAME/bin',
