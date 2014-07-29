@@ -81,8 +81,6 @@ namespace mongo {
         // to be included in all files using the client's sub sockets
         static const char* const kIntPubSubEndpoint;
 
-
-
         // process-specific (mongod or mongos) initialization of internal communication sockets
         static zmq::socket_t* initSendSocket();
         static zmq::socket_t* initRecvSocket();
