@@ -61,21 +61,22 @@ namespace mongo {
 
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
-    zmq::socket_t* PubSub::extRecvSocket;
+    zmq::socket_t* PubSub::extRecvSocket = NULL;
 
     zmq::socket_t* PubSub::initSendSocket() {
-        zmq::socket_t* sendSocket;
+        zmq::socket_t* sendSocket = NULL;
         try {
             sendSocket = new zmq::socket_t(zmqContext, isMongos() ? ZMQ_PUSH : ZMQ_PUB);
         } catch (zmq::error_t& e) {
             // TODO: turn off pubsub if initialization here fails
             log() << "Error initializing zmq send socket." << causedBy(e) << endl;
+            return NULL;
         }
         return sendSocket;
     }
 
     zmq::socket_t* PubSub::initRecvSocket() {
-        zmq::socket_t* recvSocket;
+        zmq::socket_t* recvSocket = NULL;
         try {
             recvSocket =
                 new zmq::socket_t(zmqContext, serverGlobalParams.configsvr ? ZMQ_PULL : ZMQ_SUB);
@@ -85,6 +86,7 @@ namespace mongo {
         } catch (zmq::error_t& e) {
             // TODO: turn off pubsub if initialization here fails
             log() << "Error initializing zmq recv socket." << causedBy(e) << endl;
+            return NULL;
         }
         return recvSocket;
     }
