@@ -291,7 +291,7 @@ namespace mongo {
                         timeoutElem.type() == NumberInt);
 
                 if (timeoutElem.type() == NumberDouble) {
-                    timeout = std::floor(timeoutElem.numberDouble());
+                    timeout = static_cast<long>(std::floor(timeoutElem.numberDouble()));
                 } else if (timeoutElem.type() == NumberLong) {
                     timeout = timeoutElem.numberLong();
                 } else {
