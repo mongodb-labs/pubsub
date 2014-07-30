@@ -105,10 +105,11 @@ namespace mongo {
                 boost::thread internalProxy(PubSub::proxy,
                                             PubSub::extRecvSocket,
                                             &PubSub::intPubSocket);
-            }
 
-            // clean up subscriptions that have been inactive for at least 10 minutes
-            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
+                // clean up subscriptions that have been inactive for at least 10 minutes
+                boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
+
+            }
 
             return Status::OK();
         }
