@@ -69,14 +69,15 @@ namespace mongo {
         // outwards-facing interface for pubsub communication across replsets and clusters
         static bool publish(const string& channel, const BSONObj& message);
         static SubscriptionId subscribe(const string& channel);
-        static std::priority_queue<SubscriptionMessage> poll(std::set<SubscriptionId>&
-                                                                                   subscriptionIds,
-                                                             long timeout, long long& millisPolled,
-                                                             bool& pollAgain,
-                                                             std::map<SubscriptionId,
-                                                                      std::string>& errors);
+        static std::priority_queue<SubscriptionMessage>
+            poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled,
+                 bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
+        // force is an option used internally if a poll is interrupted by an unsubscribe to 
+        // allow the unsubscribe to happen without having to check the subscription in and
+        // back out. it is always false if this method is called from the unsubscribe command.
         static void unsubscribe(const SubscriptionId& subscriptionId,
-                                std::map<SubscriptionId, std::string>& errors, bool force=false);
+                                std::map<SubscriptionId, std::string>& errors,
+                                bool force=false);
 
         // to be included in all files using the client's sub sockets
         static const char* const kIntPubSubEndpoint;
@@ -151,9 +152,9 @@ namespace mongo {
 
         // This method receives messages on all subscriptions passed in. In the event of an error,
         // this method inserts an error message in the errors map for the given SubscriptionId.
-        static std::priority_queue<SubscriptionMessage> recvMessages(
-                                std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs,
-                                std::map<SubscriptionId, std::string>& errors);
+        static std::priority_queue<SubscriptionMessage>
+                recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs,
+                             std::map<SubscriptionId, std::string>& errors);
     };
 
 }  // namespace mongo
