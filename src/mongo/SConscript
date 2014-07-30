@@ -925,7 +925,7 @@ env.Library("pubsub",
             [
              "db/pubsub_sendsock.cpp"
             ],
-            LIBDEPS=["mongodandmongos"])
+            LIBDEPS=["$BUILD_DIR/third_party/shim_zeromq"])
 
 mongodOnlyFiles = [ "db/db.cpp", "db/commands/touch.cpp",
                     "db/mongod_options_init.cpp", "db/pubsub_d.cpp" ]
