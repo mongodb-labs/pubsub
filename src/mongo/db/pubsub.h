@@ -87,11 +87,13 @@ namespace mongo {
         static zmq::socket_t* initRecvSocket();
         static void proxy(zmq::socket_t* subscriber, zmq::socket_t* publisher);
         static void subscriptionCleanup();
+        static void initSharding(const std::string configServers);
 
         // zmq sockets for internal communication
         static zmq::context_t zmqContext;
         static zmq::socket_t intPubSocket;
         static zmq::socket_t* extRecvSocket;
+        static zmq::socket_t dbEventSocket;
 
     private:
 

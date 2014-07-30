@@ -37,7 +37,7 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
-
+#include "mongo/s/d_logic.h"
 
 namespace mongo {
 
@@ -62,6 +62,7 @@ namespace mongo {
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
     zmq::socket_t* PubSub::extRecvSocket = NULL;
+    zmq::socket_t PubSub::dbEventSocket(zmqContext, ZMQ_PUSH);
 
     zmq::socket_t* PubSub::initSendSocket() {
         zmq::socket_t* sendSocket = NULL;
@@ -132,6 +133,32 @@ namespace mongo {
         }
     }
 
+    void PubSub::initSharding(const std::string configServers) {
+        vector<string> configdbs;
+        splitStringDelim(configServers, &configdbs, ',');
+
+        // find config db we are using for pubsub
+        HostAndPort maxConfigHP;
+        maxConfigHP.setPort(0);
+
+        for (vector<string>::iterator it = configdbs.begin(); it != configdbs.end(); it++) {
+            HostAndPort configHP = HostAndPort(*it);
+            if (configHP.port() > maxConfigHP.port())
+                maxConfigHP = configHP;
+        }
+
+        HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(), maxConfigHP.port() + 3456);
+
+        try {
+            PubSub::dbEventSocket.connect(("tcp://" + configPullEndpoint.toString()).c_str());
+        } catch (zmq::error_t& e) {
+            // TODO: something more drastic than logging
+            log() << "Could not connect to config server." << causedBy(e) << endl;
+        }
+
+    }
+
+
     /**
      * In-memory data structures for pubsub.
      * Subscribers can poll for more messages on their subscribed channels, and the class
@@ -159,6 +186,14 @@ namespace mongo {
         try {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
+
+            if (!isMongos() && shardingState.enabled()) {
+                // publish database events to config servers
+                const BSONObj messageCopy = message.copy(); // necessary? test
+                PubSub::dbEventSocket.send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
+                PubSub::dbEventSocket.send(messageCopy.objdata(), messageCopy.objsize());
+            }
+
             PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
             PubSubSendSocket::extSendSocket->send(message.objdata(), message.objsize());
         } catch (zmq::error_t& e) {
