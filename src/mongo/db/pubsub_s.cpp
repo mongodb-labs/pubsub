@@ -45,8 +45,8 @@ namespace mongo {
             PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
-            HostAndPort minConfigHP;
-            minConfigHP.setPort(0);
+            HostAndPort maxConfigHP;
+            maxConfigHP.setPort(0);
 
             // connect to MAX PORT config server
             // TODO: hook into config server when mongos is added/removed like with repl sets
@@ -55,15 +55,15 @@ namespace mongo {
                  it != configServers.end();
                  it++) {
                 HostAndPort configHP = HostAndPort(*it);
-                if (configHP.port() > minConfigHP.port())
-                    minConfigHP = configHP;
+                if (configHP.port() > maxConfigHP.port())
+                    maxConfigHP = configHP;
             }
 
 
-            HostAndPort configPullEndpoint = HostAndPort(minConfigHP.host(),
-                                                         minConfigHP.port() + 1234);
-            HostAndPort configPubEndpoint = HostAndPort(minConfigHP.host(),
-                                                        minConfigHP.port() + 2345);
+            HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(),
+                                                         maxConfigHP.port() + 1234);
+            HostAndPort configPubEndpoint = HostAndPort(maxConfigHP.host(),
+                                                        maxConfigHP.port() + 2345);
             try {
                 PubSubSendSocket::extSendSocket->connect(("tcp://" +
                                                  configPullEndpoint.toString()).c_str());
