@@ -37,7 +37,6 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
-#include "mongo/s/d_logic.h"
 
 namespace mongo {
 
@@ -62,7 +61,7 @@ namespace mongo {
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
     zmq::socket_t* PubSub::extRecvSocket = NULL;
-    zmq::socket_t PubSub::dbEventSocket(zmqContext, ZMQ_PUSH);
+    zmq::socket_t* PubSub::dbEventSocket = NULL;
 
     zmq::socket_t* PubSub::initSendSocket() {
         zmq::socket_t* sendSocket = NULL;
@@ -147,10 +146,11 @@ namespace mongo {
                 maxConfigHP = configHP;
         }
 
-        HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(), maxConfigHP.port() + 3456);
+        HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(), maxConfigHP.port() + 1234);
 
         try {
-            PubSub::dbEventSocket.connect(("tcp://" + configPullEndpoint.toString()).c_str());
+            PubSub::dbEventSocket = new zmq::socket_t(zmqContext, ZMQ_PUSH);
+            PubSub::dbEventSocket->connect(("tcp://" + configPullEndpoint.toString()).c_str());
         } catch (zmq::error_t& e) {
             // TODO: something more drastic than logging
             log() << "Could not connect to config server." << causedBy(e) << endl;
@@ -187,11 +187,16 @@ namespace mongo {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
 
-            if (!isMongos() && shardingState.enabled() && channel.substr(0, 7) == "$event.") {
+            // dbEventSocket is non-null iff mongod is in a sharded environment
+            // workaround to compile on mongos without including d_logic.cpp
+            printf("\n\nDBEVENTSOCKET: %p, CHANNEL: %s\n\n", dbEventSocket, channel.c_str());
+
+            if (!serverGlobalParams.configsvr && PubSub::dbEventSocket != NULL && channel.substr(0, 7) == "$event.") {
+                printf("\n\nPUBLISHING TO CONFIG\n\n");
                 // publish database events to config servers
                 const BSONObj messageCopy = message.copy(); // necessary? test
-                PubSub::dbEventSocket.send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-                PubSub::dbEventSocket.send(messageCopy.objdata(), messageCopy.objsize());
+                PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
+                PubSub::dbEventSocket->send(messageCopy.objdata(), messageCopy.objsize());
             }
 
             PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);

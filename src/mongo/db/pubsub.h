@@ -93,7 +93,7 @@ namespace mongo {
         static zmq::context_t zmqContext;
         static zmq::socket_t intPubSocket;
         static zmq::socket_t* extRecvSocket;
-        static zmq::socket_t dbEventSocket;
+        static zmq::socket_t* dbEventSocket;
 
     private:
 
