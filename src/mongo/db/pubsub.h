@@ -45,19 +45,25 @@ namespace mongo {
         SubscriptionId subscriptionId;
         std::string channel;
         BSONObj message;
-
+        unsigned long long timestamp;
         SubscriptionMessage(SubscriptionId _subscriptionId,
                             std::string _channel,
-                            BSONObj _message) {
+                            BSONObj _message, 
+                            unsigned long long _timestamp) {
             subscriptionId = _subscriptionId;
             channel = _channel;
             message = _message;
+            timestamp = _timestamp;
         }
 
         friend bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2) {
             if (m1.subscriptionId < m2.subscriptionId)
                 return true;
             if (m1.subscriptionId == m2.subscriptionId && m1.channel < m2.channel)
+                return true;
+            if (m1.subscriptionId == m2.subscriptionId &&
+                m1.channel == m2.channel &&
+                m1.timestamp < m2.timestamp)
                 return true;
             return false;
         }
