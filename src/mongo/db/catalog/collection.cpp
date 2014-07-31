@@ -191,7 +191,7 @@ namespace mongo {
         if ( status.isOK() ) {
             _details->paddingFits();
 
-            std::string channel = "$cmd.insert." + _ns.ns();
+            std::string channel = "$event." + _ns.ns() + ".insert";
             bool success = PubSub::publish(channel, docToInsert);
             if (!success)
                 log() << "Error publishing DB event." << endl;
@@ -217,7 +217,7 @@ namespace mongo {
         if ( !status.isOK() )
             return StatusWith<DiskLoc>( status );
 
-        std::string channel = "$cmd.insert." + _ns.ns();
+        std::string channel = "$event." + _ns.ns() + ".insert";
         bool success = PubSub::publish(channel, doc);
         if (!success)
             log() << "Error publishing DB event." << endl;
@@ -276,7 +276,7 @@ namespace mongo {
 
         BSONObj doc = docFor( loc );
 
-        std::string channel = "$cmd.remove." + _ns.ns();
+        std::string channel = "$event." + _ns.ns() + ".remove";
         bool success = PubSub::publish(channel, doc);
         if (!success)
             log() << "Error publishing DB event." << endl;

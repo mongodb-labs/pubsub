@@ -787,7 +787,7 @@ namespace mongo {
             if (docWasModified)
                 opDebug->nModified++;
 
-            std::string channel = "$cmd.update." + nsString.ns();
+            std::string channel = "$event." + nsString.ns() + ".update";
             printf("%s\n", channel.c_str());
             BSONObj body = BSON("old" << oldObjOwned << "new" << newObj);
             bool success = PubSub::publish(channel, body);

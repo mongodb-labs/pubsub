@@ -187,7 +187,7 @@ namespace mongo {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
 
-            if (!isMongos() && shardingState.enabled()) {
+            if (!isMongos() && shardingState.enabled() && channel.substr(0, 7) == "$event.") {
                 // publish database events to config servers
                 const BSONObj messageCopy = message.copy(); // necessary? test
                 PubSub::dbEventSocket.send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
