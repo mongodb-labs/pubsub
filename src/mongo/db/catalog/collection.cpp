@@ -38,6 +38,7 @@
 #include "mongo/db/catalog/database.h"
 #include "mongo/db/catalog/index_create.h"
 #include "mongo/db/index/index_access_method.h"
+#include "mongo/db/pubsub.h"
 #include "mongo/db/structure/catalog/namespace_details.h"
 #include "mongo/db/repl/rs.h"
 #include "mongo/db/storage/extent.h"
@@ -189,6 +190,11 @@ namespace mongo {
         StatusWith<DiskLoc> status = _insertDocument( docToInsert, enforceQuota, preGen );
         if ( status.isOK() ) {
             _details->paddingFits();
+
+            std::string channel = "$cmd.insert." + _ns.ns();
+            bool success = PubSub::publish(channel, docToInsert);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
         }
 
         return status;
@@ -210,6 +216,11 @@ namespace mongo {
         Status status = indexBlock.insert( doc, loc.getValue(), indexOptions );
         if ( !status.isOK() )
             return StatusWith<DiskLoc>( status );
+
+        std::string channel = "$cmd.insert." + _ns.ns();
+        bool success = PubSub::publish(channel, doc);
+        if (!success)
+            log() << "Error publishing DB event." << endl;
 
         return loc;
     }
@@ -264,6 +275,11 @@ namespace mongo {
         }
 
         BSONObj doc = docFor( loc );
+
+        std::string channel = "$cmd.remove." + _ns.ns();
+        bool success = PubSub::publish(channel, doc);
+        if (!success)
+            log() << "Error publishing DB event." << endl;
 
         if ( deletedId ) {
             BSONElement e = doc["_id"];
