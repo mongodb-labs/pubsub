@@ -189,10 +189,9 @@ namespace mongo {
 
             // dbEventSocket is non-null iff mongod is in a sharded environment
             // workaround to compile on mongos without including d_logic.cpp
-            printf("\n\nDBEVENTSOCKET: %p, CHANNEL: %s\n\n", dbEventSocket, channel.c_str());
-
-            if (!serverGlobalParams.configsvr && PubSub::dbEventSocket != NULL && channel.substr(0, 7) == "$event.") {
-                printf("\n\nPUBLISHING TO CONFIG\n\n");
+            if (!serverGlobalParams.configsvr &&
+                PubSub::dbEventSocket != NULL &&
+                channel.substr(0, 7) == "$event.") {
                 // publish database events to config servers
                 const BSONObj messageCopy = message.copy(); // necessary? test
                 PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
