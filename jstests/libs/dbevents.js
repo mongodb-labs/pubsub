@@ -16,7 +16,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     publisher.pubsub.remove({text: 'goodbye'});
 
     // subscribe to all events on the publisher DB's pubsub collection
-    var channelPrefix = '$event.' + publisher + '.pubsub.'
+    var channelPrefix = '$events.' + publisher + '.pubsub.'
     var insertChannel = channelPrefix + 'insert';
     var updateChannel = channelPrefix + 'update';
     var removeChannel = channelPrefix + 'remove';
