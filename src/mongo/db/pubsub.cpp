@@ -37,6 +37,7 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
+#include <time.h>
 
 namespace mongo {
 
@@ -183,6 +184,7 @@ namespace mongo {
 
     bool PubSub::publish(const std::string& channel, const BSONObj& message) {
 
+        unsigned long long timestamp = curTimeMicros64();
         try {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
@@ -199,7 +201,10 @@ namespace mongo {
 
             // publications and writes to config servers are published normally
             PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-            PubSubSendSocket::extSendSocket->send(message.objdata(), message.objsize());
+            PubSubSendSocket::extSendSocket->send(message.objdata(),
+                                                  message.objsize(),
+                                                  ZMQ_SNDMORE);
+            PubSubSendSocket::extSendSocket->send(&timestamp, sizeof(timestamp));
         } catch (zmq::error_t& e) {
             // can't uassert here - this method is used for database events.
             // don't want a db event command to fail because pubsub doesn't work
@@ -403,7 +408,12 @@ namespace mongo {
                     message = message.getOwned();
                     msg.rebuild();
 
-                    SubscriptionMessage m(subscriptionId, channel, message);
+                    // receive timestamp
+                    s->sock->recv(&msg);
+                    unsigned long long timestamp = *((unsigned long long*)(msg.data()));
+                    msg.rebuild();
+
+                    SubscriptionMessage m(subscriptionId, channel, message, timestamp);
                     outbox.push(m);
                 }
             } catch (zmq::error_t& e) {
