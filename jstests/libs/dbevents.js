@@ -20,7 +20,12 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     var insertChannel = channelPrefix + 'insert';
     var updateChannel = channelPrefix + 'update';
     var removeChannel = channelPrefix + 'remove';
-    var eventSub = subscriber.runCommand({subscribe: channelPrefix}).subscriptionId;
+
+    // TODO: rewrite shell helpers to take a DB
+    var oldDb = db;
+    db = subscriber;
+
+    var eventSub = subscriber.subscribe(channelPrefix).subscriptionId;
     var res, msg;
 
 
@@ -33,7 +38,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
-        res = subscriber.runCommand({poll: eventSub});
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -55,7 +60,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
-        res = subscriber.runCommand({poll: eventSub});
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -75,7 +80,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.remove({text: 'goodbye'}));
 
     assert.soon(function() {
-        res = subscriber.runCommand({poll: eventSub});
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -85,7 +90,8 @@ var testPubSubDataEvents = function(publisher, subscriber) {
 
 
     // clean up subscription
-    subscriber.runCommand({unsubscribe: eventSub});
+    subscriber.unsubscribe(eventSub);
+    db = oldDb;
 }
 
 var assertMessageCount = function(res, subscriptionId, channel, count) {
