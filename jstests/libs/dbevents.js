@@ -13,9 +13,12 @@ var testPubSubDataEvents = function(publisher, subscriber) {
         subscriber = publisher;
     }
 
+    var oldDoc = {_id: 1, text: 'hello'};
+    var newDoc = {_id: 1, text: 'goodbye'}
+
     // clean up collection used for this test
-    publisher.pubsub.remove({text: 'hello'});
-    publisher.pubsub.remove({text: 'goodbye'});
+    publisher.pubsub.remove(oldDoc);
+    publisher.pubsub.remove(newDoc);
 
     // subscribe to all events on the publisher DB's pubsub collection
     var channelPrefix = '$events.' + publisher + '.pubsub.'
@@ -36,7 +39,6 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // - do an insert
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the correct document
-    var oldDoc = {_id: 1, text: 'hello'};
     assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
@@ -58,7 +60,6 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     //    old: <old document>,
     //    new: <new document>
     // }
-    var newDoc = {_id: 1, text: 'goodbye'}
     assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
