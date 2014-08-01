@@ -2,6 +2,7 @@
 assert(load('jstests/libs/dbevents.js'));
 
 // start a cluster with 2 mongoses
+// TODO: make this work correctly with all configurations
 var st = new ShardingTest({name: 'pubsubClusterDbEvents', mongos: 1, config: 1, shards: 1, rs: {nodes: 1}});
 // var st = new ShardingTest({name: 'pubsubClusterDbEvents', mongos: 2, rs: {nodes: 1}});
 
