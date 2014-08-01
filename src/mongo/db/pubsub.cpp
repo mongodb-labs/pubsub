@@ -191,13 +191,13 @@ namespace mongo {
             // workaround to compile on mongos without including d_logic.cpp
             if (!serverGlobalParams.configsvr &&
                 PubSub::dbEventSocket != NULL &&
-                channel.substr(0, 7) == "$event.") {
+                StringData(channel).startsWith("$events.")) {
                 // only publish database events to config servers
-                const BSONObj messageCopy = message.copy(); // necessary? test
                 PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-                PubSub::dbEventSocket->send(messageCopy.objdata(), messageCopy.objsize());
+                PubSub::dbEventSocket->send(message.objdata(), message.objsize());
             }
 
+            // publications and writes to config servers are published normally
             PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
             PubSubSendSocket::extSendSocket->send(message.objdata(), message.objsize());
         } catch (zmq::error_t& e) {

@@ -192,7 +192,7 @@ namespace mongo {
             _details->paddingFits();
 
             // TODO: allow ns-cmdtype or cmdtype-ns option
-            std::string channel = "$event." + _ns.ns() + ".insert";
+            std::string channel = "$events." + _ns.ns() + ".insert";
             bool success = PubSub::publish(channel, docToInsert);
             if (!success)
                 log() << "Error publishing DB event." << endl;
@@ -219,7 +219,7 @@ namespace mongo {
             return StatusWith<DiskLoc>( status );
 
         // TODO: allow ns-cmdtype or cmdtype-ns option
-        std::string channel = "$event." + _ns.ns() + ".insert";
+        std::string channel = "$events." + _ns.ns() + ".insert";
         bool success = PubSub::publish(channel, doc);
         if (!success)
             log() << "Error publishing DB event." << endl;
@@ -279,7 +279,7 @@ namespace mongo {
         BSONObj doc = docFor( loc );
 
         // TODO: allow ns-cmdtype or cmdtype-ns option
-        std::string channel = "$event." + _ns.ns() + ".remove";
+        std::string channel = "$events." + _ns.ns() + ".remove";
         bool success = PubSub::publish(channel, doc);
         if (!success)
             log() << "Error publishing DB event." << endl;

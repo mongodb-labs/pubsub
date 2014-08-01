@@ -1,9 +1,9 @@
 /**
- * Shared function to use when testing database event notifications
- * using pubsub. Tests to make sure that write commands on the publisher
+ * Shared functions to use when testing database event notifications
+ * using pubsub. Test to make sure that write commands on the publisher
  * are received as events on the appropriate channels on the subscriber.
  */
-var receiveDbEvents = function(publisher, subscriber) {
+var testPubSubDataEvents = function(publisher, subscriber) {
 
     // makeshift function overloading so this
     // method can test a single node or a pair
@@ -21,7 +21,7 @@ var receiveDbEvents = function(publisher, subscriber) {
     var updateChannel = channelPrefix + 'update';
     var removeChannel = channelPrefix + 'remove';
     var eventSub = subscriber.runCommand({subscribe: channelPrefix}).subscriptionId;
-    var res;
+    var res, msg;
 
 
 
@@ -29,15 +29,17 @@ var receiveDbEvents = function(publisher, subscriber) {
     // - do an insert
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the correct document
-    assert.writeOK(publisher.pubsub.insert({text: 'hello'}));
+    var oldDoc = {_id: 1, text: 'hello'};
+    assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
         res = subscriber.runCommand({poll: eventSub});
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assert.eq(res.messages[eventSub.str][insertChannel].length, 1);
-    assert.eq(res.messages[eventSub.str][insertChannel][0].text, 'hello');
+    assertMessageCount(res, eventSub, insertChannel, 1);
+    msg = res.messages[eventSub.str][insertChannel][0];
+    assert.eq(msg, oldDoc);
 
 
 
@@ -49,18 +51,20 @@ var receiveDbEvents = function(publisher, subscriber) {
     //    old: <old document>,
     //    new: <new document>
     // }
-    assert.writeOK(publisher.pubsub.update({text: 'hello'}, {text: 'goodbye'}));
+    var newDoc = {_id: 1, text: 'goodbye'}
+    assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
         res = subscriber.runCommand({poll: eventSub});
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assert.eq(res.messages[eventSub.str][updateChannel].length, 1);
-    assert(res.messages[eventSub.str][updateChannel][0].hasOwnProperty('old'));
-    assert(res.messages[eventSub.str][updateChannel][0].hasOwnProperty('new'));
-    assert.eq(res.messages[eventSub.str][updateChannel][0].old.text, 'hello');
-    assert.eq(res.messages[eventSub.str][updateChannel][0]['new'].text, 'goodbye');
+    assertMessageCount(res, eventSub, updateChannel, 1);
+    var msg = res.messages[eventSub.str][updateChannel][0];
+    assert(msg.hasOwnProperty('old'));
+    assert(msg.hasOwnProperty('new'));
+    assert.eq(msg.old, oldDoc);
+    assert.eq(msg.new, newDoc);
 
 
 
@@ -75,11 +79,17 @@ var receiveDbEvents = function(publisher, subscriber) {
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assert.eq(res.messages[eventSub.str][removeChannel].length, 1);
-    assert.eq(res.messages[eventSub.str][removeChannel][0].text, 'goodbye');
+    assertMessageCount(res, eventSub, removeChannel, 1);
+    msg = res.messages[eventSub.str][removeChannel][0];
+    assert.eq(msg, newDoc);
 
 
+    // clean up subscription
     subscriber.runCommand({unsubscribe: eventSub});
+}
 
-    return true;
+var assertMessageCount = function(res, subscriptionId, channel, count) {
+    var channelMessages = res.messages[subscriptionId.str][channel];
+    assert.neq(channelMessages, undefined);
+    assert.eq(channelMessages.length, count);
 }

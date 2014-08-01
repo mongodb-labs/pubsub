@@ -788,7 +788,7 @@ namespace mongo {
                 opDebug->nModified++;
 
             // TODO: allow ns-cmdtype or cmdtype-ns option
-            std::string channel = "$event." + nsString.ns() + ".update";
+            std::string channel = "$events." + nsString.ns() + ".update";
             BSONObj body = BSON("old" << oldObjOwned << "new" << newObj);
             bool success = PubSub::publish(channel, body);
             if (!success)
