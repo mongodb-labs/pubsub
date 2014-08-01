@@ -103,7 +103,7 @@ namespace mongo {
 
         // contains information about a single subscription
         struct SubscriptionInfo {
-            zmq::socket_t* sock;
+            scoped_ptr<zmq::socket_t> sock;
 
             // If currently polling, all other polls return error. Set in checkoutSocket
             // (which locks the map of all subscriptions) to ensure that sockets are only

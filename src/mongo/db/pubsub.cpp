@@ -122,7 +122,6 @@ namespace mongo {
                         } catch (zmq::error_t& e) {
                             log() << "Error closing zmq socket." << causedBy(e) << endl;
                         }
-                        delete s->sock;
                         delete s;
                         subscriptions.erase(it);
                     }
@@ -189,7 +188,7 @@ namespace mongo {
         }
 
         SubscriptionInfo* s = new SubscriptionInfo();
-        s->sock = subSocket;
+        s->sock.reset(subSocket);
         s->inUse = 0;
         s->shouldUnsub = 0;
         s->polledRecently = 1;
@@ -407,8 +406,6 @@ namespace mongo {
             } catch (zmq::error_t& e) {
                 errors.insert(std::make_pair(subscriptionId, "Error closing zmq socket."));
             }
-
-            delete s->sock;
             delete s;
             subscriptions.erase(it);
         }
