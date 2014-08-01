@@ -1,3 +1,5 @@
+var db;
+
 /**
  * Shared functions to use when testing database event notifications
  * using pubsub. Test to make sure that write commands on the publisher
@@ -22,10 +24,10 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     var removeChannel = channelPrefix + 'remove';
 
     // TODO: rewrite shell helpers to take a DB
-    var oldDb = db;
+    // until this is done, shell will crash after completion of tests
     db = subscriber;
 
-    var eventSub = ps.subscribe(channelPrefix).subscriptionId;
+    var eventSub = ps.subscribe(channelPrefix);
     var res, msg;
 
 
@@ -91,7 +93,6 @@ var testPubSubDataEvents = function(publisher, subscriber) {
 
     // clean up subscription
     ps.unsubscribe(eventSub);
-    db = oldDb;
 }
 
 var assertMessageCount = function(res, subscriptionId, channel, count) {

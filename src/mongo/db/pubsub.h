@@ -64,7 +64,7 @@ namespace mongo {
                 return true;
             if (m1.subscriptionId == m2.subscriptionId &&
                 m1.channel == m2.channel &&
-                m1.timestamp < m2.timestamp)
+                m1.timestamp > m2.timestamp)
                 return true;
             return false;
         }

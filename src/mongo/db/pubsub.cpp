@@ -196,7 +196,8 @@ namespace mongo {
                 StringData(channel).startsWith("$events.")) {
                 // only publish database events to config servers
                 PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-                PubSub::dbEventSocket->send(message.objdata(), message.objsize());
+                PubSub::dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
+                PubSub::dbEventSocket->send(&timestamp, sizeof(timestamp));
             }
 
             // publications and writes to config servers are published normally

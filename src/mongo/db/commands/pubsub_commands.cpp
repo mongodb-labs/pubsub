@@ -317,7 +317,7 @@ namespace mongo {
                 while (!messages.empty() && sm.subscriptionId == currId) {
                     std::string currChannel = sm.channel;
                     BSONArrayBuilder arrayBuilder;
-                    while (sm.channel == currChannel) {
+                    while (sm.subscriptionId == currId && sm.channel == currChannel) {
                         arrayBuilder.append(sm.message);
                         messages.pop();
                         if (messages.empty())
