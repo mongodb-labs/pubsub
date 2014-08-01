@@ -48,7 +48,7 @@ namespace mongo {
         unsigned long long timestamp;
         SubscriptionMessage(SubscriptionId _subscriptionId,
                             std::string _channel,
-                            BSONObj _message, 
+                            BSONObj _message,
                             unsigned long long _timestamp) {
             subscriptionId = _subscriptionId;
             channel = _channel;

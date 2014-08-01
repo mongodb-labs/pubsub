@@ -57,18 +57,20 @@ namespace mongo {
                 HostAndPort configHP = HostAndPort(*it);
                 if (configHP.port() > maxConfigHP.port())
                     maxConfigHP = configHP;
+
+                HostAndPort configPubEndpoint = HostAndPort(configHP.host(),
+                                                            configHP.port() + 2345);
+                PubSub::extRecvSocket->connect(("tcp://" +
+                                                 configPubEndpoint.toString()).c_str());
             }
 
 
             HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(),
                                                          maxConfigHP.port() + 1234);
-            HostAndPort configPubEndpoint = HostAndPort(maxConfigHP.host(),
-                                                        maxConfigHP.port() + 2345);
+
             try {
                 PubSubSendSocket::extSendSocket->connect(("tcp://" +
                                                  configPullEndpoint.toString()).c_str());
-                PubSub::extRecvSocket->connect(("tcp://" +
-                                                 configPubEndpoint.toString()).c_str());
             } catch (zmq::error_t& e) {
                 // TODO: turn off pubsub if connection here fails
                 log() << "Error connecting pubsub sockets." << causedBy(e) << endl;
