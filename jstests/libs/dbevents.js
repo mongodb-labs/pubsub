@@ -25,7 +25,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     var oldDb = db;
     db = subscriber;
 
-    var eventSub = subscriber.subscribe(channelPrefix).subscriptionId;
+    var eventSub = ps.subscribe(channelPrefix).subscriptionId;
     var res, msg;
 
 
@@ -38,7 +38,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = ps.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -60,7 +60,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = ps.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -80,7 +80,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     assert.writeOK(publisher.pubsub.remove({text: 'goodbye'}));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = ps.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -90,7 +90,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
 
 
     // clean up subscription
-    subscriber.unsubscribe(eventSub);
+    ps.unsubscribe(eventSub);
     db = oldDb;
 }
 
