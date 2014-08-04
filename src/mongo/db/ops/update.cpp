@@ -787,10 +787,11 @@ namespace mongo {
             if (docWasModified)
                 opDebug->nModified++;
 
-            // TODO: allow ns-cmdtype or cmdtype-ns option
-            std::string channel = "$events." + nsString.ns() + ".update";
-            BSONObj body = BSON("old" << oldObjOwned << "new" << newObj);
-            bool success = PubSub::publish(channel, body);
+            BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
+            BSONObj publishObject = BSON("namespace" << nsString.ns() <<
+                                         "type" << "update" <<
+                                         "doc" << updateObject);
+            bool success = PubSub::publish("$events", publishObject);
             if (!success)
                 log() << "Error publishing DB event." << endl;
 

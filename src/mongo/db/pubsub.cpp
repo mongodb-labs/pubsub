@@ -193,7 +193,7 @@ namespace mongo {
             // workaround to compile on mongos without including d_logic.cpp
             if (!serverGlobalParams.configsvr &&
                 PubSub::dbEventSocket != NULL &&
-                StringData(channel).startsWith("$events.")) {
+                StringData(channel).startsWith("$events")) {
                 // only publish database events to config servers
                 PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
                 PubSub::dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
