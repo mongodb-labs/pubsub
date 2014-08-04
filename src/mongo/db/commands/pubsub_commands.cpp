@@ -48,6 +48,7 @@ namespace mongo {
         const std::string kPublishField = "publish";
         const std::string kMessageField = "message";
         const std::string kSubscribeField = "subscribe";
+        const std::string kQueryField = "query";
         const std::string kPollField = "poll";
         const std::string kTimeoutField = "timeout";
         const std::string kMillisPolledField = "millisPolled";
@@ -199,7 +200,7 @@ namespace mongo {
         }
 
         virtual void help(stringstream &help) const {
-            help << "{ subscribe : <channel> }";
+            help << "{ subscribe : <channel>, filter : <BSONObj>, projection : <BSONObj> }";
         }
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
@@ -215,9 +216,35 @@ namespace mongo {
 
             string channel = channelElem.String();
 
+            // TODO: validate filter format (look at find command?)
+            BSONObj filter;
+            if (cmdObj.hasField("filter")){
+                BSONElement filterElem = cmdObj["filter"];
+                // ensure that the filter is a BSON object
+                uassert(18553, mongoutils::str::stream() << "The filter passed to the subscribe "
+                                                         << "command must be an object but was a "
+                                                         << typeName(filterElem.type()),
+                        filterElem.type() == mongo::Object);
+                filter = filterElem.Obj();
+            }
+
+            // TODO: validate projection format
+            BSONObj projection;
+            if (cmdObj.hasField("projection")){
+                BSONElement projectionElem = cmdObj["projection"];
+                // ensure that the projection is a BSON object
+                uassert(18554, mongoutils::str::stream() << "The projection passed to the "
+                                                         << "subscribe command must be an object "
+                                                         << "but was a "
+                                                         << typeName(projectionElem.type()),
+                        projectionElem.type() == mongo::Object);
+                projection = projectionElem.Obj();
+            }
+
+
             // TODO: add secure access to this channel?
             // perhaps return an <oid, key> pair?
-            OID oid = PubSub::subscribe(channel);
+            OID oid = PubSub::subscribe(channel, filter, projection);
             result.append(kSubscriptionId, oid);
 
             return true;
