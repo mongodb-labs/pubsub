@@ -86,12 +86,12 @@ namespace mongo {
             }
 
             // proxy incoming messages to internal publisher to be received by clients
-            boost::thread internalProxy(PubSub::proxy,
+/*            boost::thread internalProxy(PubSub::proxy,
                                         PubSub::extRecvSocket,
                                         &PubSub::intPubSocket);
-
+*/
             // clean up subscriptions that have been inactive for at least 10 minutes
-            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
+//            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
 
             return Status::OK();
         }
