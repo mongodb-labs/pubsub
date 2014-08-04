@@ -174,7 +174,8 @@ namespace mongo {
 
     // TODO: add secure access to this channel?
     // perhaps return an <oid, key> pair?
-    SubscriptionId PubSub::subscribe(const std::string& channel) {
+    SubscriptionId PubSub::subscribe(const std::string& channel, const BSONObj& filter,
+                                     const BSONObj& projection) {
         SubscriptionId subscriptionId;
         subscriptionId.init();
 
@@ -192,6 +193,16 @@ namespace mongo {
         s->inUse = 0;
         s->shouldUnsub = 0;
         s->polledRecently = 1;
+
+        s->filter.reset(NULL);
+        if (!filter.isEmpty())
+            s->filter.reset(new Matcher2(filter.getOwned()));
+
+        s->projection.reset(NULL);
+        if (!projection.isEmpty()){
+            s->projection.reset(new Projection());
+            s->projection->init(projection);
+        }
 
         SimpleMutex::scoped_lock lk(mapMutex);
         subscriptions.insert(std::make_pair(subscriptionId, s));
@@ -264,6 +275,7 @@ namespace mongo {
             }
         } catch (zmq::error_t& e) {
             log() << "Error polling on zmq socket." << causedBy(e) << endl;
+            // check all sockets back in
             endCurrentPolls(subs);
             uassert(18547, e.what(), false);
         }
@@ -368,6 +380,14 @@ namespace mongo {
                     s->sock->recv(&msg);
                     unsigned long long timestamp = *((unsigned long long*)(msg.data()));
                     msg.rebuild();
+
+                    // if subscription has filter, continue only if message matches filter
+                    if (s->filter && !s->filter->matches(message))
+                        continue;
+
+                    // if subscription has projection, apply projection to message
+                    if (s->projection)
+                        message = s->projection->transform(message);
 
                     SubscriptionMessage m(subscriptionId, channel, message, timestamp);
                     outbox.push(m);

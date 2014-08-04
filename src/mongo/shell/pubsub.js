@@ -28,12 +28,27 @@ ps.publish = function(channel, message) {
     return res;
 }
 
-ps.subscribe = function(channel) {
+ps.subscribe = function(channel, filter, projection) {
     channelType = typeof channel;
     if (channelType != "string")
         throw Error("The channel argument to the subscribe command must be a string but was a " +
                      channelType);
-    var res = db.runCommand({ subscribe: channel });
+    filterType = typeof filter;
+    if (filterType != "undefined" && filterType != "object")
+        throw Error("The filter argument to the subscribe command must be an object but was a " +
+                     filterType);
+    projectionType = typeof projection;
+    if (projectionType != "undefined" && projectionType != "object")
+        throw Error("The projection argument to the subscribe command must be an object " +
+                    "but was a " +
+                    projectionType);
+
+    var cmdObj = {subscribe: channel};
+    if (filter)
+        cmdObj["filter"] = filter;
+    if (projection)
+        cmdObj["projection"] = projection;
+    var res = db.runCommand(cmdObj) ;
     assert.commandWorked(res)
     var subscriptionId = res['subscriptionId'];
     this._allSubscriptions.push(subscriptionId);
