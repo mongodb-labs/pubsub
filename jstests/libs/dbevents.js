@@ -29,7 +29,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // until this is done, shell will crash after completion of tests
     db = subscriber;
 
-    var filter = {namespace: "test.pubsub"};
+    var filter = {namespace: namespace};
     var eventSub = ps.subscribe(channel, filter);
     var res, msg;
 
