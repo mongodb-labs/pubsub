@@ -281,7 +281,7 @@ namespace mongo {
         BSONObj doc = docFor( loc );
 
         BSONObj publishObject = BSON("namespace" << _ns.ns() <<
-                                     "type" << "insert" <<
+                                     "type" << "remove" <<
                                      "doc" << doc);
         bool success = PubSub::publish("$events", publishObject);
         if (!success)

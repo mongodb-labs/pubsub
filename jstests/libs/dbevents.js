@@ -16,22 +16,21 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // documents used for this test
     var oldDoc = {_id: 1, text: 'hello'};
     var newDoc = {_id: 1, text: 'goodbye'}
+    var namespace = publisher + ".pubsub"
 
     // clean up collection used for this test
     publisher.pubsub.remove(oldDoc);
     publisher.pubsub.remove(newDoc);
 
     // subscribe to all events on the publisher DB's pubsub collection
-    var channelPrefix = '$events.' + publisher + '.pubsub.'
-    var insertChannel = channelPrefix + 'insert';
-    var updateChannel = channelPrefix + 'update';
-    var removeChannel = channelPrefix + 'remove';
+    var channel = '$events';
 
     // TODO: rewrite shell helpers to take a DB
     // until this is done, shell will crash after completion of tests
     db = subscriber;
 
-    var eventSub = ps.subscribe(channelPrefix);
+    var filter = {namespace: "test.pubsub"};
+    var eventSub = ps.subscribe(channel, filter);
     var res, msg;
 
 
@@ -47,9 +46,14 @@ var testPubSubDataEvents = function(publisher, subscriber) {
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, insertChannel, 1);
-    msg = res.messages[eventSub.str][insertChannel][0];
-    assert.eq(msg, oldDoc);
+    assertMessageCount(res, eventSub, channel, 1);
+    msg = res.messages[eventSub.str][channel][0];
+    var insertDoc = {
+        namespace: namespace,
+        type: "insert",
+        doc: oldDoc
+    };
+    assert.eq(msg, insertDoc);
 
 
 
@@ -68,12 +72,17 @@ var testPubSubDataEvents = function(publisher, subscriber) {
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, updateChannel, 1);
-    var msg = res.messages[eventSub.str][updateChannel][0];
-    assert(msg.hasOwnProperty('old'));
-    assert(msg.hasOwnProperty('new'));
-    assert.eq(msg.old, oldDoc);
-    assert.eq(msg.new, newDoc);
+    assertMessageCount(res, eventSub, channel, 1);
+    var msg = res.messages[eventSub.str][channel][0];
+    var updateDoc = {
+        namespace: namespace,
+        type: "update",
+        doc: {
+            old: oldDoc,
+            new: newDoc
+        }
+    };
+    assert.eq(msg, updateDoc);
 
 
 
@@ -81,16 +90,21 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // - do a remove
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the deleted document
-    assert.writeOK(publisher.pubsub.remove({text: 'goodbye'}));
+    assert.writeOK(publisher.pubsub.remove(newDoc));
 
     assert.soon(function() {
         res = ps.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, removeChannel, 1);
-    msg = res.messages[eventSub.str][removeChannel][0];
-    assert.eq(msg, newDoc);
+    assertMessageCount(res, eventSub, channel, 1);
+    msg = res.messages[eventSub.str][channel][0];
+    var removeDoc = {
+        namespace: namespace,
+        type: "remove",
+        doc: newDoc
+    };
+    assert.eq(msg, removeDoc);
 
 
     // clean up subscription

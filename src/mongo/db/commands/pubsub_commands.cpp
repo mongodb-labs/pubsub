@@ -135,7 +135,7 @@ namespace mongo {
             string channel = channelElem.String();
 
             // $events channel is reserved for DB events
-            uassert(18553,
+            uassert(18555,
                     mongoutils::str::stream() << "The \"$events\" channel is reserved for"
                                               << "database event notifications.",
                     !StringData(channel).startsWith("$events"));
