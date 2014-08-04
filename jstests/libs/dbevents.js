@@ -13,6 +13,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
         subscriber = publisher;
     }
 
+    // documents used for this test
     var oldDoc = {_id: 1, text: 'hello'};
     var newDoc = {_id: 1, text: 'goodbye'}
 
