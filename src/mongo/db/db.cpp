@@ -73,6 +73,7 @@
 #include "mongo/db/stats/snapshots.h"
 #include "mongo/db/storage_options.h"
 #include "mongo/db/ttl.h"
+#include "mongo/db/pubsub_d.h"
 #include "mongo/platform/process_id.h"
 #include "mongo/s/d_writeback.h"
 #include "mongo/scripting/engine.h"
@@ -748,6 +749,11 @@ namespace mongo {
         else {
             startTTLBackgroundJob();
         }
+
+        bool pubsub = true;
+        if (pubsub)
+            startPubsubBackgroundJob();
+
 
 #ifndef _WIN32
         mongo::signalForkSuccess();

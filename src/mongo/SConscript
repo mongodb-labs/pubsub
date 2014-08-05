@@ -536,6 +536,7 @@ serverOnlyFiles = [ "db/curop.cpp",
                     "db/pagefault.cpp",
                     "util/compress.cpp",
                     "db/ttl.cpp",
+                    "db/pubsub_d.cpp",
                     "db/d_concurrency.cpp",
                     "db/lockstat.cpp",
                     "db/lockstate.cpp",
@@ -928,7 +929,7 @@ env.Library("pubsub",
             LIBDEPS=["$BUILD_DIR/third_party/shim_zeromq"])
 
 mongodOnlyFiles = [ "db/db.cpp", "db/commands/touch.cpp",
-                    "db/mongod_options_init.cpp", "db/pubsub_d.cpp" ]
+                    "db/mongod_options_init.cpp" ]
 
 # ----- TARGETS ------
 
