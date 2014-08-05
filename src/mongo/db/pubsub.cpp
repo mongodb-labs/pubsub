@@ -86,6 +86,7 @@ namespace mongo {
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
     zmq::socket_t* PubSub::extRecvSocket = NULL;
+    zmq::socket_t* PubSub::dbEventSocket = NULL;
 
     zmq::socket_t* PubSub::initSendSocket() {
         zmq::socket_t* sendSocket = NULL;
@@ -158,6 +159,33 @@ namespace mongo {
         }
     }
 
+    void PubSub::initSharding(const std::string configServers) {
+        vector<string> configdbs;
+        splitStringDelim(configServers, &configdbs, ',');
+
+        // find config db we are using for pubsub
+        HostAndPort maxConfigHP;
+        maxConfigHP.setPort(0);
+
+        for (vector<string>::iterator it = configdbs.begin(); it != configdbs.end(); it++) {
+            HostAndPort configHP = HostAndPort(*it);
+            if (configHP.port() > maxConfigHP.port())
+                maxConfigHP = configHP;
+        }
+
+        HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(), maxConfigHP.port() + 1234);
+
+        try {
+            PubSub::dbEventSocket = new zmq::socket_t(zmqContext, ZMQ_PUSH);
+            PubSub::dbEventSocket->connect(("tcp://" + configPullEndpoint.toString()).c_str());
+        } catch (zmq::error_t& e) {
+            // TODO: something more drastic than logging
+            log() << "Could not connect to config server." << causedBy(e) << endl;
+        }
+
+    }
+
+
     /**
      * In-memory data structures for pubsub.
      * Subscribers can poll for more messages on their subscribed channels, and the class
@@ -185,6 +213,19 @@ namespace mongo {
         try {
             // zmq sockets are not thread-safe
             SimpleMutex::scoped_lock lk(sendMutex);
+
+            // dbEventSocket is non-null iff mongod is in a sharded environment
+            // workaround to compile on mongos without including d_logic.cpp
+            if (!serverGlobalParams.configsvr &&
+                PubSub::dbEventSocket != NULL &&
+                StringData(channel).startsWith("$events")) {
+                // only publish database events to config servers
+                PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
+                PubSub::dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
+                PubSub::dbEventSocket->send(&timestamp, sizeof(timestamp));
+            }
+
+            // publications and writes to config servers are published normally
             PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
             PubSubSendSocket::extSendSocket->send(message.objdata(),
                                                   message.objsize(),

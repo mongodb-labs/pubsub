@@ -46,6 +46,7 @@
 #include "mongo/db/ops/update_lifecycle.h"
 #include "mongo/db/pagefault.h"
 #include "mongo/db/pdfile.h"
+#include "mongo/db/pubsub.h"
 #include "mongo/db/query/get_runner.h"
 #include "mongo/db/query/lite_parsed_query.h"
 #include "mongo/db/query/query_planner_common.h"
@@ -604,6 +605,7 @@ namespace mongo {
             // Get next doc, and location
             DiskLoc loc;
             state = runner->getNext(&oldObj, &loc);
+            const BSONObj oldObjOwned = oldObj.getOwned();
             const bool didYield = (oldYieldCount != curOp->numYields());
 
             if (state != Runner::RUNNER_ADVANCED) {
@@ -784,6 +786,14 @@ namespace mongo {
             // Only record doc modifications if they wrote (exclude no-ops)
             if (docWasModified)
                 opDebug->nModified++;
+
+            BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
+            BSONObj publishObject = BSON("namespace" << nsString.ns() <<
+                                         "type" << "update" <<
+                                         "doc" << updateObject);
+            bool success = PubSub::publish("$events", publishObject);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
 
             if (!request.isMulti()) {
                 break;

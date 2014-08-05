@@ -133,6 +133,13 @@ namespace mongo {
                                               << typeName(channelElem.type()),
                     channelElem.type() == mongo::String);
 
+            string channel = channelElem.String();
+
+            // $events channel is reserved for DB events
+            uassert(18555,
+                    mongoutils::str::stream() << "The \"$events\" channel is reserved for"
+                                              << "database event notifications.",
+                    !StringData(channel).startsWith("$events"));
 
             // ensure that message argument exists
             uassert(18552,
@@ -148,7 +155,6 @@ namespace mongo {
                                               << typeName(messageElem.type()),
                     messageElem.type() == mongo::Object);
 
-            string channel = channelElem.String();
             BSONObj message = messageElem.Obj();
 
             bool success = PubSub::publish(channel, message);

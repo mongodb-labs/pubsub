@@ -64,7 +64,6 @@ namespace mongo {
                                                      configPubEndpoint.toString()).c_str());
             }
 
-
             HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(),
                                                          maxConfigHP.port() + 1234);
 
