@@ -36,7 +36,10 @@ namespace mongo {
 
     class PubSubSendSocket {
     public:
-        // map modifiers
+        // methods that update which members of a replica set are still connected.
+        // updateReplSetMember() adds members to the set if they are not yet connected
+        // or marks them as still in use. pruneReplSetMembers() then disconnects from
+        // any members who are no longer in the replica set. both called from repl/rs.cpp
         static void updateReplSetMember(HostAndPort hp);
         static void pruneReplSetMembers();
 

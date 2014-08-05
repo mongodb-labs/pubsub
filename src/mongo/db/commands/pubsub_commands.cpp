@@ -68,19 +68,20 @@ namespace mongo {
 
             if (element.type() == jstOID) {
                 oids.insert(element.OID());
-            } else {
+            }
+            else {
                 std::vector<BSONElement> elements = element.Array();
                 for (std::vector<BSONElement>::iterator it = elements.begin();
                      it != elements.end();
                      it++) {
-                    // ensure that each member of the array is a SubscriptionId
-                    uassert(18544,
-                            mongoutils::str::stream() << "Each subscriptionId in the "
-                                                      << "subscriptionId array must be an "
-                                                      << "ObjectID but found a "
-                                                      << typeName(it->type()),
-                            it->type() == jstOID);
-                    oids.insert(it->OID());
+                        // ensure that each member of the array is a SubscriptionId
+                        uassert(18544,
+                                mongoutils::str::stream() << "Each subscriptionId in the "
+                                                          << "subscriptionId array must be an "
+                                                          << "ObjectID but found a "
+                                                          << typeName(it->type()),
+                                it->type() == jstOID);
+                        oids.insert(it->OID());
                 }
             }
         }
@@ -319,9 +320,11 @@ namespace mongo {
 
                 if (timeoutElem.type() == NumberDouble) {
                     timeout = static_cast<long>(std::floor(timeoutElem.numberDouble()));
-                } else if (timeoutElem.type() == NumberLong) {
+                }
+                else if (timeoutElem.type() == NumberLong) {
                     timeout = timeoutElem.numberLong();
-                } else {
+                }
+                else {
                     timeout = timeoutElem.numberInt();
                 }
             }
@@ -366,7 +369,7 @@ namespace mongo {
                 for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
                      it != errors.end();
                      it++) {
-                    errorBuilder.append(it->first.toString(), it->second);
+                        errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());
             }
@@ -436,7 +439,7 @@ namespace mongo {
                 for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
                      it != errors.end();
                      it++) {
-                    errorBuilder.append(it->first.toString(), it->second);
+                        errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());
             }

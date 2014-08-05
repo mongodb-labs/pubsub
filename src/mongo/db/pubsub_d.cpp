@@ -62,43 +62,46 @@ namespace mongo {
                 try {
                     // listen (pull) from each mongos in the cluster
                     const std::string kExtPullEndpoint = str::stream() << "tcp://*:"
-                                                                       << (port + 1234);
+                                                                       << port + 1234;
                     PubSub::extRecvSocket->bind(kExtPullEndpoint.c_str());
 
                     // publish to all mongoses in the cluster
                     const std::string kExtPubEndpoint = str::stream() << "tcp://*:"
-                                                                      << (port + 2345);
+                                                                      << port + 2345;
                     PubSubSendSocket::extSendSocket->bind(kExtPubEndpoint.c_str());
-                } catch (zmq::error_t& e) {
+                }
+                catch (zmq::error_t& e) {
                     // TODO: turn off pubsub if connection here fails
-                    log() << "Error initializing pubsub sockets." << causedBy(e) << endl;
+                    log() << "Error initializing pubsub sockets." << causedBy(e);
                 }
 
                 // automatically proxy messages from PULL endpoint to PUB endpoint
                 boost::thread internalProxy(PubSub::proxy,
                                             PubSub::extRecvSocket,
                                             PubSubSendSocket::extSendSocket);
-            } else {
+            }
+            else {
                 // each mongod in a replica set publishes its messages
                 // to all other mongods in its replica set
 
                 try {
                     // listen (subscribe) to all mongods in the replset
                     const std::string kExtSubEndpoint = str::stream() << "tcp://*:"
-                                                                      << (port + 1234);
+                                                                      << port + 1234;
                     PubSub::extRecvSocket->bind(kExtSubEndpoint.c_str());
 
                     // connect to own sub socket to publish messages to self
                     // (other mongods in replset connect to our sub socket when they join the set)
                     const std::string kExtPubEndpoint = str::stream() << "tcp://localhost:"
-                                                                      << (port + 1234);
+                                                                      << port + 1234;
                     PubSubSendSocket::extSendSocket->connect(kExtPubEndpoint.c_str());
 
                     // automatically proxy messages from SUB endpoint to client sub sockets
                     PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
-                } catch (zmq::error_t& e) {
+                }
+                catch (zmq::error_t& e) {
                     // TODO: turn off pubsub if connection here fails
-                    log() << "Could not initialize PubSub sockets: " << causedBy(e) << endl;
+                    log() << "Could not initialize PubSub sockets: " << causedBy(e);
                 }
 
                 // proxy incoming messages to internal publisher to be received by clients

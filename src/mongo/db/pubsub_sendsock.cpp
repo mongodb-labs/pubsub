@@ -45,14 +45,15 @@ namespace mongo {
 
             try {
                 extSendSocket->connect(endpoint.c_str());
-                log() << "Pubsub connected to new replica set member." << endl;
-            } catch (zmq::error_t& e) {
-                log() << "Error connecting to replica set member." << causedBy(e) << endl;
+            }
+            catch (zmq::error_t& e) {
+                log() << "Error connecting to replica set member." << causedBy(e);
             }
 
             // don't need to lock around the map because this is called from a locked context
             rsMembers.insert(std::make_pair(hp, true));
-        } else {
+        }
+        else {
             member->second = true;
         }
     }
@@ -61,22 +62,24 @@ namespace mongo {
         for (std::map<HostAndPort, bool>::iterator it = rsMembers.begin();
              it != rsMembers.end();
              it++) {
-            if (it->second == false) {
-                std::string endpoint = str::stream() << "tcp://" << it->first.host()
-                                                     << ":" << (it->first.port() + 1234);
+                if (it->second == false) {
+                    std::string endpoint = str::stream() << "tcp://" << it->first.host()
+                                                         << ":" << (it->first.port() + 1234);
 
-                try {
-                    extSendSocket->disconnect(endpoint.c_str());
-                    log() << "Pubsub disconnected from replica set member." << endl;
-                } catch (zmq::error_t& e) {
-                    log() << "Error disconnecting from replica set member." << causedBy(e) << endl;
+                    try {
+                        extSendSocket->disconnect(endpoint.c_str());
+                    }
+                    catch (zmq::error_t& e) {
+                        log() << "Error disconnecting from replica set member." << causedBy(e);
+                    }
+
+                    // don't need to lock around the map because
+                    // this is called from a locked context
+                    rsMembers.erase(it);
                 }
-
-                // don't need to lock around the map because this is called from a locked context
-                rsMembers.erase(it);
-            } else {
-                it->second = false;
-            }
+                else {
+                    it->second = false;
+                }
         }
     }
 

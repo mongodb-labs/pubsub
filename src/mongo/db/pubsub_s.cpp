@@ -54,14 +54,14 @@ namespace mongo {
             for (std::vector<std::string>::iterator it = configServers.begin();
                  it != configServers.end();
                  it++) {
-                HostAndPort configHP = HostAndPort(*it);
-                if (configHP.port() > maxConfigHP.port())
-                    maxConfigHP = configHP;
+                    HostAndPort configHP = HostAndPort(*it);
+                    if (configHP.port() > maxConfigHP.port())
+                        maxConfigHP = configHP;
 
-                HostAndPort configPubEndpoint = HostAndPort(configHP.host(),
-                                                            configHP.port() + 2345);
-                PubSub::extRecvSocket->connect(("tcp://" +
-                                                 configPubEndpoint.toString()).c_str());
+                    HostAndPort configPubEndpoint = HostAndPort(configHP.host(),
+                                                                configHP.port() + 2345);
+                    PubSub::extRecvSocket->connect(("tcp://" +
+                                                     configPubEndpoint.toString()).c_str());
             }
 
 
@@ -71,18 +71,20 @@ namespace mongo {
             try {
                 PubSubSendSocket::extSendSocket->connect(("tcp://" +
                                                  configPullEndpoint.toString()).c_str());
-            } catch (zmq::error_t& e) {
+            }
+            catch (zmq::error_t& e) {
                 // TODO: turn off pubsub if connection here fails
-                log() << "Error connecting pubsub sockets." << causedBy(e) << endl;
+                log() << "Error connecting pubsub sockets." << causedBy(e);
             }
 
 
             try {
                 // publishes to client subscribe sockets
                 PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
-            } catch (zmq::error_t& e) {
+            }
+            catch (zmq::error_t& e) {
                 // TODO: turn off pubsub if connection here fails
-                log() << "Error binding publish socket." << causedBy(e) << endl;
+                log() << "Error binding publish socket." << causedBy(e);
             }
 
             // proxy incoming messages to internal publisher to be received by clients
