@@ -35,11 +35,7 @@
 #include "mongo/db/pubsub.h"
 #include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/server_options.h"
-
 #include "mongo/util/background.h"
-#include "mongo/db/auth/authorization_session.h"
-#include "mongo/db/auth/user_name.h"  
-#include "mongo/db/client.h"
 
 namespace mongo {
 
@@ -53,8 +49,6 @@ namespace mongo {
         static string secondsExpireField;
 
         virtual void run() {
-            Client::initThread( name().c_str() );
-            cc().getAuthorizationSession()->grantInternalAuthorization();
 
             // TODO: allow users to set pubsub ports on startup                                     
             const int port = serverGlobalParams.port;                                               
