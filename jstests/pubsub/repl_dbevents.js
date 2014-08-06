@@ -15,6 +15,6 @@ var primary = rs.getPrimary().getDB('test');
 var secondary = rs.getSecondary().getDB('test');
 
 // events work between the two nodes
-testPubSubDataEvents(primary, secondary);
+testPubSubDataEvents(secondary, primary);
 
 rs.stopSet();

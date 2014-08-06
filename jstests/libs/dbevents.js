@@ -1,36 +1,34 @@
-var db;
-
 /**
  * Shared functions to use when testing database event notifications
  * using pubsub. Test to make sure that write commands on the publisher
  * are received as events on the appropriate channels on the subscriber.
  */
-var testPubSubDataEvents = function(publisher, subscriber) {
+var testPubSubDataEvents = function(subdb, pubdb) {
 
     // makeshift function overloading so this
     // method can test a single node or a pair
-    if (subscriber === undefined) {
-        subscriber = publisher;
+    if (pubdb === undefined) {
+        pubdb = subdb;
     }
+
+    var subscriber = subdb.PS();
 
     // documents used for this test
     var oldDoc = {_id: 1, text: 'hello'};
     var newDoc = {_id: 1, text: 'goodbye'}
-    var namespace = publisher + ".pubsub"
 
     // clean up collection used for this test
-    publisher.pubsub.remove(oldDoc);
-    publisher.pubsub.remove(newDoc);
+    pubdb.pubsub.remove(oldDoc);
+    pubdb.pubsub.remove(newDoc);
 
     // subscribe to all events on the publisher DB's pubsub collection
     var channel = '$events';
+    var namespace = pubdb + ".pubsub"
 
     // TODO: rewrite shell helpers to take a DB
     // until this is done, shell will crash after completion of tests
-    db = subscriber;
-
     var filter = {namespace: namespace};
-    var eventSub = ps.subscribe(channel, filter);
+    var eventSub = subscriber.subscribe(channel, filter);
     var res, msg;
 
 
@@ -39,10 +37,10 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // - do an insert
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the correct document
-    assert.writeOK(publisher.pubsub.save(oldDoc));
+    assert.writeOK(pubdb.pubsub.save(oldDoc));
 
     assert.soon(function() {
-        res = ps.poll(eventSub);
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -65,10 +63,10 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     //    old: <old document>,
     //    new: <new document>
     // }
-    assert.writeOK(publisher.pubsub.save(newDoc));
+    assert.writeOK(pubdb.pubsub.save(newDoc));
 
     assert.soon(function() {
-        res = ps.poll(eventSub);
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -90,10 +88,10 @@ var testPubSubDataEvents = function(publisher, subscriber) {
     // - do a remove
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the deleted document
-    assert.writeOK(publisher.pubsub.remove(newDoc));
+    assert.writeOK(pubdb.pubsub.remove(newDoc));
 
     assert.soon(function() {
-        res = ps.poll(eventSub);
+        res = subscriber.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
@@ -108,7 +106,7 @@ var testPubSubDataEvents = function(publisher, subscriber) {
 
 
     // clean up subscription
-    ps.unsubscribe(eventSub);
+    subscriber.unsubscribe(eventSub);
 }
 
 var assertMessageCount = function(res, subscriptionId, channel, count) {

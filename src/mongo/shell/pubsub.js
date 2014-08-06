@@ -1,20 +1,31 @@
-ps = function() { return "try ps.help()"; }
+var PS;
 
-ps._allSubscriptions = [];
+(function() {
 
-ps.help = function() {
+if (PS === undefined) {
+    PS = function(db) {
+        if (db === undefined) {
+            print("Publish/Subscribe takes a database parameter.");
+            return;
+        }
+        this._db = db;
+        this._allSubscriptions = [];
+    }
+}
+
+PS.prototype.help = function() {
     print("\tps.publish(channel, message)    publishes message to given channel");
     print("\tps.subscribe(channel)           <ObjectId> subscribes to channel");
     print("\tps.poll(id, [timeout])          checks for messages on the subscription id " +
                                              "given, waiting for <timeout> msecs if specified");
     print("\tps.pollAll([timeout])           polls for messages on all subscriptions issed by " +
-                                             "this shell");
+                                             "this instance of PS");
     print("\tps.unsubscribe(id)              unsubscribes from subscription id given");
     print("\tps.unsubscribeAll()             unsubscribes from all subscriptions issued by " +
-                                             "this shell");
+                                             "this instance of PS");
 }
 
-ps.publish = function(channel, message) {
+PS.prototype.publish = function(channel, message) {
     channelType = typeof channel;
     if (channelType != "string")
         throw Error("The channel argument to the publish command must be a string but was a " +
@@ -23,12 +34,12 @@ ps.publish = function(channel, message) {
     if (messageType != "object")
         throw Error("The message argument to the publish command must be a document but was a " +
                      messageType);
-    var res = db.runCommand({ publish: channel, message: message });
+    var res = this._db.runCommand({ publish: channel, message: message });
     assert.commandWorked(res);
     return res;
 }
 
-ps.subscribe = function(channel, filter, projection) {
+PS.prototype.subscribe = function(channel, filter, projection) {
     channelType = typeof channel;
     if (channelType != "string")
         throw Error("The channel argument to the subscribe command must be a string but was a " +
@@ -45,55 +56,57 @@ ps.subscribe = function(channel, filter, projection) {
 
     var cmdObj = {subscribe: channel};
     if (filter)
-        cmdObj["filter"] = filter;
+        cmdObj.filter = filter;
     if (projection)
-        cmdObj["projection"] = projection;
-    var res = db.runCommand(cmdObj) ;
+        cmdObj.projection = projection;
+    var res = this._db.runCommand(cmdObj) ;
     assert.commandWorked(res)
-    var subscriptionId = res['subscriptionId'];
+    var subscriptionId = res.subscriptionId;
     this._allSubscriptions.push(subscriptionId);
     return subscriptionId;
 }
 
-ps.poll = function(id, timeout) {
+PS.prototype.poll = function(id, timeout) {
     timeoutType = typeof timeout;
     if (timeoutType != "undefined" && timeoutType != "number")
         throw Error("The timeout argument to the poll command must be " +
                     "a number but was a " + timeoutType);
     var dbCommand = { poll: id };
     if (timeout) dbCommand.timeout = timeout;
-    var res = db.runCommand(dbCommand);
+    var res = this._db.runCommand(dbCommand);
     assert.commandWorked(res);
     return res;
 }
 
-ps.pollAll = function(timeout) {
+PS.prototype.pollAll = function(timeout) {
     timeoutType = typeof timeout;
     if (timeoutType != "undefined" && timeoutType != "number")
         throw Error("The timeout argument to the poll command must be a " +
                     "number but was a " + timeoutType);
     var dbCommand = { poll: this._allSubscriptions };
     if (timeout) dbCommand.timeout = timeout;
-    var res = db.runCommand(dbCommand);
+    var res = this._db.runCommand(dbCommand);
     assert.commandWorked(res);
     return res;
 }
 
-ps.unsubscribe = function(id) {
+PS.prototype.unsubscribe = function(id) {
     idType = typeof id;
     if (idType != "object" && idType != "array")
         throw Error("The subscriptionId argument to the unsubscribe command must be " +
                     "an object or array but was a " + idType);
-    var res = db.runCommand({ unsubscribe: id });
+    var res = this._db.runCommand({ unsubscribe: id });
     assert.commandWorked(res);
     var idx = this._allSubscriptions.indexOf(id);
     this._allSubscriptions.splice(idx, 1);
     return res;
 }
 
-ps.unsubscribeAll = function() {
-    var res = db.runCommand({ unsubscribe: this._allSubscriptions });
+PS.prototype.unsubscribeAll = function() {
+    var res = this._db.runCommand({ unsubscribe: this._allSubscriptions });
     assert.commandWorked(res);
     this._allSubscriptions = [];
     return res
 }
+
+}());
