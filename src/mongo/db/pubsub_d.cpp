@@ -51,7 +51,7 @@ namespace mongo {
         virtual void run() {
 
             // TODO: allow users to set pubsub ports on startup                                     
-            const int port = serverGlobalParams.port;                                               
+           const int port = serverGlobalParams.port;                                               
                                                                                                     
             // is publish socket regardless of if config or mongod                                  
             PubSubSendSocket::extSendSocket = PubSub::initSendSocket();                             
@@ -116,7 +116,6 @@ namespace mongo {
 
                 // clean up subscriptions that have been inactive for at least 10 minutes
                 boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
-
             }
 
         }

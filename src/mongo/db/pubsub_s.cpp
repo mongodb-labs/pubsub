@@ -31,16 +31,23 @@
 #include <boost/thread.hpp>
 #include <zmq.hpp>
 
-#include "mongo/base/init.h"
+#include "mongo/util/background.h"
 #include "mongo/db/pubsub.h"
 #include "mongo/db/pubsub_sendsock.h"
 #include "mongo/s/mongos_options.h"
 
 namespace mongo {
 
-    namespace {                                                                                     
+    class PubSubCleanup: public BackgroundJob {                                                     
+    public:                                                                                         
+        PubSubCleanup(){}                                                                           
+        virtual ~PubSubCleanup(){}                                                                  
                                                                                                     
-        MONGO_INITIALIZER(SetupPubSubSockets)(InitializerContext* context) { 
+        virtual string name() const { return "PubSubCleanup"; }                                     
+                                                                                                    
+        static string secondsExpireField;                                                           
+                                                                                                    
+        virtual void run() {  
 
             PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
@@ -86,14 +93,19 @@ namespace mongo {
             }
 
             // proxy incoming messages to internal publisher to be received by clients
-/*            boost::thread internalProxy(PubSub::proxy,
+            boost::thread internalProxy(PubSub::proxy,
                                         PubSub::extRecvSocket,
                                         &PubSub::intPubSocket);
-*/
-            // clean up subscriptions that have been inactive for at least 10 minutes
-//            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
 
-            return Status::OK();
+            // clean up subscriptions that have been inactive for at least 10 minutes
+            boost::thread subscriptionCleanup(PubSub::subscriptionCleanup);
+
         }
-    }
+    };
+
+    void startPubsubBackgroundJob() {                                                               
+        PubSubCleanup* pubSubCleanup = new PubSubCleanup();                                         
+        pubSubCleanup->go();                                                                        
+    }  
+
 }
