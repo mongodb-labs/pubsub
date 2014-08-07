@@ -38,6 +38,7 @@
 #include "mongo/db/auth/privilege.h"
 #include "mongo/db/commands.h"
 #include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 
 namespace mongo {
 
@@ -157,7 +158,7 @@ namespace mongo {
 
             BSONObj message = messageElem.Obj();
 
-            bool success = PubSub::publish(channel, message);
+            bool success = PubSubSendSocket::publish(channel, message);
 
             uassert(18538, "Failed to publish message.", success);
 

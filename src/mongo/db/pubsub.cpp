@@ -29,15 +29,15 @@
 #include "mongo/pch.h"
 
 #include "mongo/db/pubsub.h"
-#include "mongo/db/pubsub_sendsock.h"
 
+#include <time.h>
 #include <zmq.hpp>
 
 #include "mongo/bson/oid.h"
 #include "mongo/db/instance.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
-#include <time.h>
 
 namespace mongo {
 
@@ -86,7 +86,6 @@ namespace mongo {
     zmq::context_t PubSub::zmqContext(1);
     zmq::socket_t PubSub::intPubSocket(zmqContext, ZMQ_PUB);
     zmq::socket_t* PubSub::extRecvSocket = NULL;
-    zmq::socket_t* PubSub::dbEventSocket = NULL;
 
     zmq::socket_t* PubSub::initSendSocket() {
         zmq::socket_t* sendSocket = NULL;
@@ -159,33 +158,6 @@ namespace mongo {
         }
     }
 
-    void PubSub::initSharding(const std::string configServers) {
-        vector<string> configdbs;
-        splitStringDelim(configServers, &configdbs, ',');
-
-        // find config db we are using for pubsub
-        HostAndPort maxConfigHP;
-        maxConfigHP.setPort(0);
-
-        for (vector<string>::iterator it = configdbs.begin(); it != configdbs.end(); it++) {
-            HostAndPort configHP = HostAndPort(*it);
-            if (configHP.port() > maxConfigHP.port())
-                maxConfigHP = configHP;
-        }
-
-        HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(), maxConfigHP.port() + 1234);
-
-        try {
-            PubSub::dbEventSocket = new zmq::socket_t(zmqContext, ZMQ_PUSH);
-            PubSub::dbEventSocket->connect(("tcp://" + configPullEndpoint.toString()).c_str());
-        } catch (zmq::error_t& e) {
-            // TODO: something more drastic than logging
-            log() << "Could not connect to config server." << causedBy(e) << endl;
-        }
-
-    }
-
-
     /**
      * In-memory data structures for pubsub.
      * Subscribers can poll for more messages on their subscribed channels, and the class
@@ -203,44 +175,8 @@ namespace mongo {
     const long PubSub::maxPollInterval = 100; // milliseconds
 
     SimpleMutex PubSub::mapMutex("subsmap");
-    SimpleMutex PubSub::sendMutex("zmqsend");
 
     // Outwards-facing interface for PubSub across replica sets and sharded clusters
-
-    bool PubSub::publish(const std::string& channel, const BSONObj& message) {
-
-        unsigned long long timestamp = curTimeMicros64();
-        try {
-            // zmq sockets are not thread-safe
-            SimpleMutex::scoped_lock lk(sendMutex);
-
-            // dbEventSocket is non-null iff mongod is in a sharded environment
-            // workaround to compile on mongos without including d_logic.cpp
-            if (!serverGlobalParams.configsvr &&
-                PubSub::dbEventSocket != NULL &&
-                StringData(channel).startsWith("$events")) {
-                // only publish database events to config servers
-                PubSub::dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-                PubSub::dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
-                PubSub::dbEventSocket->send(&timestamp, sizeof(timestamp));
-            }
-
-            // publications and writes to config servers are published normally
-            PubSubSendSocket::extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-            PubSubSendSocket::extSendSocket->send(message.objdata(),
-                                                  message.objsize(),
-                                                  ZMQ_SNDMORE);
-            PubSubSendSocket::extSendSocket->send(&timestamp, sizeof(timestamp));
-        }
-        catch (zmq::error_t& e) {
-            // can't uassert here - this method is used for database events.
-            // don't want a db event command to fail because pubsub doesn't work
-            log() << "ZeroMQ failed to publish to pub socket." << causedBy(e);
-            return false;
-        }
-
-        return true;
-    }
 
     // TODO: add secure access to this channel?
     // perhaps return an <oid, key> pair?

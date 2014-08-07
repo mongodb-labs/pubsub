@@ -61,7 +61,6 @@ namespace mongo {
     public:
 
         // outwards-facing interface for pubsub communication across replsets and clusters
-        static bool publish(const string& channel, const BSONObj& message);
         static SubscriptionId subscribe(const string& channel,
                                         const BSONObj& filter,
                                         const BSONObj& projection);
@@ -86,13 +85,11 @@ namespace mongo {
         static zmq::socket_t* initRecvSocket();
         static void proxy(zmq::socket_t* subscriber, zmq::socket_t* publisher);
         static void subscriptionCleanup();
-        static void initSharding(const std::string configServers);
 
         // zmq sockets for internal communication
         static zmq::context_t zmqContext;
         static zmq::socket_t intPubSocket;
         static zmq::socket_t* extRecvSocket;
-        static zmq::socket_t* dbEventSocket;
 
     private:
 
@@ -130,9 +127,6 @@ namespace mongo {
 
         // for locking around the subscriptions map in subscribe, poll, and unsubscribe
         static SimpleMutex mapMutex;
-
-        // for locking around publish, because it uses a non-thread-safe zmq socket
-        static SimpleMutex sendMutex;
 
         // Helper method to end all polls on subscriptions passed in. This is used in the case
         // that poll() gets cut off by an error or by hitting the max poll timeout.

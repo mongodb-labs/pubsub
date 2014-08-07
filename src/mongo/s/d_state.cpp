@@ -48,7 +48,7 @@
 #include "mongo/db/commands.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/db/db.h"
-#include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/wire_version.h"
 #include "mongo/db/repl/is_master.h"
 #include "mongo/client/connpool.h"
@@ -89,7 +89,7 @@ namespace mongo {
         shardingState.enable(server);
         configServer.init(server);
 
-        PubSub::initSharding(server);
+        PubSubSendSocket::initSharding(server);
     }
 
     // TODO: Consolidate and eliminate these various ways of setting / validating shard names
