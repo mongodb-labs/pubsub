@@ -50,6 +50,7 @@
 #include "mongo/db/instance.h"
 #include "mongo/db/lasterror.h"
 #include "mongo/db/log_process_details.h"
+#include "mongo/db/pubsub_s.h"
 #include "mongo/platform/process_id.h"
 #include "mongo/s/balance.h"
 #include "mongo/s/chunk.h"
@@ -277,6 +278,11 @@ static bool runMongosServer( bool doUpgrade ) {
     if (!status.isOK()) {
         log() << "Initializing authorization data failed: " << status;
         return false;
+    }
+
+    bool pubsub = true;
+    if (pubsub) {
+        startPubsubBackgroundJob();
     }
 
     MessageServer::Options opts;

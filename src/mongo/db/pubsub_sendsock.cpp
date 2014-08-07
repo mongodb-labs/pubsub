@@ -97,7 +97,8 @@ namespace mongo {
         try {
             dbEventSocket = new zmq::socket_t(zmqContext, ZMQ_PUSH);
             dbEventSocket->connect(("tcp://" + configPullEndpoint.toString()).c_str());
-        } catch (zmq::error_t& e) {
+        }
+        catch (zmq::error_t& e) {
             // TODO: something more drastic than logging
             log() << "Could not connect to config server." << causedBy(e) << endl;
         }
@@ -108,7 +109,7 @@ namespace mongo {
         std::map<HostAndPort, bool>::iterator member = rsMembers.find(hp);
         if (!hp.isSelf() && member == rsMembers.end()) {
             std::string endpoint = str::stream() << "tcp://" << hp.host()
-                                                 << ":" << (hp.port() + 1234);
+                                                 << ":" << hp.port() + 1234;
 
             try {
                 extSendSocket->connect(endpoint.c_str());
@@ -131,7 +132,7 @@ namespace mongo {
              it++) {
                 if (it->second == false) {
                     std::string endpoint = str::stream() << "tcp://" << it->first.host()
-                                                         << ":" << (it->first.port() + 1234);
+                                                         << ":" << it->first.port() + 1234;
 
                     try {
                         extSendSocket->disconnect(endpoint.c_str());
