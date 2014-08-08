@@ -30,8 +30,9 @@
 
 #include "mongo/pch.h"
 
-#include <zmq.hpp>
 #include <boost/thread.hpp>
+#include <zmq.hpp>
+
 #include "mongo/db/pubsub.h"
 #include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/server_options.h"
@@ -49,6 +50,13 @@ namespace mongo {
         static string secondsExpireField;
 
         virtual void run() {
+
+            // TODO: allow users to set pubsub ports on startup                                     
+            const int port = serverGlobalParams.port;
+
+            // is publish socket regardless of if config or mongod
+            PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
+
             // is pull socket if config, sub socket if mongod
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
@@ -81,7 +89,7 @@ namespace mongo {
                                             PubSub::extRecvSocket,
                                             PubSubSendSocket::extSendSocket);
             }
-            else {                                                                                       
+            else {
                 // each mongod in a replica set publishes its messages                              
                 // to all other mongods in its replica set                                          
                                                                                                     
