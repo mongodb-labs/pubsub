@@ -68,9 +68,7 @@ namespace mongo {
 
             // publications and writes to config servers are published normally
             extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-            extSendSocket->send(message.objdata(),
-                                                  message.objsize(),
-                                                  ZMQ_SNDMORE);
+            extSendSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
             extSendSocket->send(&timestamp, sizeof(timestamp));
         }
         catch (zmq::error_t& e) {
