@@ -38,16 +38,16 @@
 
 namespace mongo {
 
-    class PubSubCleanup: public BackgroundJob {                                                     
-    public:                                                                                         
-        PubSubCleanup(){}                                                                           
-        virtual ~PubSubCleanup(){}                                                                  
-                                                                                                    
-        virtual string name() const { return "PubSubCleanup"; }                                     
-                                                                                                    
-        static string secondsExpireField;                                                           
-                                                                                                    
-        virtual void run() {  
+    class PubSubCleanup: public BackgroundJob {
+    public:
+        PubSubCleanup(){}
+        virtual ~PubSubCleanup(){}
+
+        virtual string name() const { return "PubSubCleanup"; }
+
+        static string secondsExpireField;
+
+        virtual void run() {
 
             PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
@@ -104,9 +104,9 @@ namespace mongo {
         }
     };
 
-    void startPubsubBackgroundJob() {                                                               
-        PubSubCleanup* pubSubCleanup = new PubSubCleanup();                                         
-        pubSubCleanup->go();                                                                        
-    }  
+    void startPubsubBackgroundJob() {
+        PubSubCleanup* pubSubCleanup = new PubSubCleanup();
+        pubSubCleanup->go();
+    }
 
 }

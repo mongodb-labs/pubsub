@@ -49,7 +49,8 @@ namespace mongo {
         const std::string kPublishField = "publish";
         const std::string kMessageField = "message";
         const std::string kSubscribeField = "subscribe";
-        const std::string kQueryField = "query";
+        const std::string kFilterField = "filter";
+        const std::string kProjectionField = "projection";
         const std::string kPollField = "poll";
         const std::string kTimeoutField = "timeout";
         const std::string kMillisPolledField = "millisPolled";
@@ -220,8 +221,8 @@ namespace mongo {
 
             // TODO: validate filter format (look at find command?)
             BSONObj filter;
-            if (cmdObj.hasField("filter")){
-                BSONElement filterElem = cmdObj["filter"];
+            if (cmdObj.hasField(kFilterField)){
+                BSONElement filterElem = cmdObj[kFilterField];
                 // ensure that the filter is a BSON object
                 uassert(18553, mongoutils::str::stream() << "The filter passed to the subscribe "
                                                          << "command must be an object but was a "
@@ -232,8 +233,8 @@ namespace mongo {
 
             // TODO: validate projection format
             BSONObj projection;
-            if (cmdObj.hasField("projection")){
-                BSONElement projectionElem = cmdObj["projection"];
+            if (cmdObj.hasField(kProjectionField)){
+                BSONElement projectionElem = cmdObj[kProjectionField];
                 // ensure that the projection is a BSON object
                 uassert(18554, mongoutils::str::stream() << "The projection passed to the "
                                                          << "subscribe command must be an object "
