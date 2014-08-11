@@ -622,11 +622,13 @@ namespace {
                 }
 
                 // mark member as part of replSet for pubsub and add connection if necessary
-                PubSubSendSocket::updateReplSetMember(i->h);
+                if (pubsub)
+                    PubSubSendSocket::updateReplSetMember(i->h);
             }
 
             // disconnect from pubsub members that are no longer part of replSet
-            PubSubSendSocket::pruneReplSetMembers();
+            if (pubsub)
+                PubSubSendSocket::pruneReplSetMembers();
 
             if( me == 0 ) { // we're not in the config -- we must have been removed
                 if (state().shunned()) {
