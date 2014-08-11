@@ -34,6 +34,9 @@
 
 namespace mongo {
 
+    extern bool pubsub;
+    extern bool dbevents;
+
     class PubSubSendSocket {
     public:
         // for locking around publish, because it uses a non-thread-safe zmq socket

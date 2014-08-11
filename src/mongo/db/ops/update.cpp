@@ -605,7 +605,11 @@ namespace mongo {
             // Get next doc, and location
             DiskLoc loc;
             state = runner->getNext(&oldObj, &loc);
-            const BSONObj oldObjOwned = oldObj.getOwned();
+
+            BSONObj oldObjOwned;
+            if (dbevents) 
+                oldObjOwned = oldObj.getOwned();
+            
             const bool didYield = (oldYieldCount != curOp->numYields());
 
             if (state != Runner::RUNNER_ADVANCED) {
@@ -787,13 +791,15 @@ namespace mongo {
             if (docWasModified)
                 opDebug->nModified++;
 
-            BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
-            BSONObj publishObject = BSON("namespace" << nsString.ns() <<
-                                         "type" << "update" <<
-                                         "doc" << updateObject);
-            bool success = PubSubSendSocket::publish("$events", publishObject);
-            if (!success)
-                log() << "Error publishing DB event." << endl;
+            if (dbevents) {
+                BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
+                BSONObj publishObject = BSON("namespace" << nsString.ns() <<
+                                             "type" << "update" <<
+                                             "doc" << updateObject);
+                bool success = PubSubSendSocket::publish("$events", publishObject);
+                if (!success)
+                    log() << "Error publishing DB event." << endl;
+            }
 
             if (!request.isMulti()) {
                 break;

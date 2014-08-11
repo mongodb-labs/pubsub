@@ -32,9 +32,14 @@
 
 #include <zmq.hpp>
 
+#include "mongo/db/server_options_helpers.h"
+#include "mongo/db/server_parameters.h"
 #include "mongo/util/stringutils.h"
 
 namespace mongo {
+
+    MONGO_EXPORT_SERVER_PARAMETER(pubsub, bool, false);
+    MONGO_EXPORT_SERVER_PARAMETER(dbevents, bool, false);
 
     SimpleMutex PubSubSendSocket::sendMutex("zmqsend");
 
@@ -99,8 +104,9 @@ namespace mongo {
             dbEventSocket->connect(("tcp://" + configPullEndpoint.toString()).c_str());
         }
         catch (zmq::error_t& e) {
-            // TODO: something more drastic than logging
-            log() << "Could not connect to config server." << causedBy(e) << endl;
+            log() << "PubSub could not connect to config server. Turning off db events..."
+                  << causedBy(e);
+            dbevents = false;
         }
 
     }
@@ -115,7 +121,7 @@ namespace mongo {
                 extSendSocket->connect(endpoint.c_str());
             }
             catch (zmq::error_t& e) {
-                log() << "Error connecting to replica set member." << causedBy(e);
+                log() << "PubSub error connecting to replica set member." << causedBy(e);
             }
 
             // don't need to lock around the map because this is called from a locked context

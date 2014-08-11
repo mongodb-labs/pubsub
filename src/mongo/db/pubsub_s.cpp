@@ -52,45 +52,46 @@ namespace mongo {
             PubSubSendSocket::extSendSocket = PubSub::initSendSocket();
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
-            HostAndPort maxConfigHP;
-            maxConfigHP.setPort(0);
-
-            // connect to MAX PORT config server
-            // TODO: hook into config server when mongos is added/removed like with repl sets
-            std::vector<std::string> configServers = mongosGlobalParams.configdbs;
-            for (std::vector<std::string>::iterator it = configServers.begin();
-                 it != configServers.end();
-                 it++) {
-                    HostAndPort configHP = HostAndPort(*it);
-                    if (configHP.port() > maxConfigHP.port())
-                        maxConfigHP = configHP;
-
-                    HostAndPort configPubEndpoint = HostAndPort(configHP.host(),
-                                                                configHP.port() + 2345);
-                    PubSub::extRecvSocket->connect(("tcp://" +
-                                                     configPubEndpoint.toString()).c_str());
-            }
-
-            HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(),
-                                                         maxConfigHP.port() + 1234);
+            // error occurred while initializing sockets
+            if (!pubsub)
+                return;
 
             try {
+
+                HostAndPort maxConfigHP;
+                maxConfigHP.setPort(0);
+
+                // connect to MAX PORT config server
+                // TODO: hook into config server when mongos is added/removed like with repl sets
+                std::vector<std::string> configServers = mongosGlobalParams.configdbs;
+                for (std::vector<std::string>::iterator it = configServers.begin();
+                     it != configServers.end();
+                     it++) {
+                        HostAndPort configHP = HostAndPort(*it);
+                        if (configHP.port() > maxConfigHP.port())
+                            maxConfigHP = configHP;
+
+                        HostAndPort configPubEndpoint = HostAndPort(configHP.host(),
+                                                                    configHP.port() + 2345);
+                        PubSub::extRecvSocket->connect(("tcp://" +
+                                                         configPubEndpoint.toString()).c_str());
+                }
+
+                HostAndPort configPullEndpoint = HostAndPort(maxConfigHP.host(),
+                                                             maxConfigHP.port() + 1234);
+
                 PubSubSendSocket::extSendSocket->connect(("tcp://" +
                                                  configPullEndpoint.toString()).c_str());
-            }
-            catch (zmq::error_t& e) {
-                // TODO: turn off pubsub if connection here fails
-                log() << "Error connecting pubsub sockets." << causedBy(e);
-            }
 
-
-            try {
                 // publishes to client subscribe sockets
                 PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
             }
             catch (zmq::error_t& e) {
-                // TODO: turn off pubsub if connection here fails
-                log() << "Error binding publish socket." << causedBy(e);
+                log() << "Error initializing PubSub sockets. Turning off PubSub..."
+                      << causedBy(e);
+                pubsub = false;
+                dbevents = false;
+                return;
             }
 
             // proxy incoming messages to internal publisher to be received by clients
@@ -105,6 +106,8 @@ namespace mongo {
     };
 
     void startPubsubBackgroundJob() {
+        if (!pubsub)
+            return;
         PubSubCleanup* pubSubCleanup = new PubSubCleanup();
         pubSubCleanup->go();
     }

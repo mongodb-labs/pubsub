@@ -33,8 +33,6 @@
 #include <time.h>
 #include <zmq.hpp>
 
-#include "mongo/bson/oid.h"
-#include "mongo/db/instance.h"
 #include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/server_options_helpers.h"
 #include "mongo/db/server_parameters.h"
@@ -58,8 +56,7 @@ namespace mongo {
         timestamp = _timestamp;
     }
 
-    bool operator<(const SubscriptionMessage& m1,
-                                               const SubscriptionMessage& m2) {
+    bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2) {
         if (m1.subscriptionId < m2.subscriptionId)
             return true;
         if (m1.subscriptionId == m2.subscriptionId && m1.channel < m2.channel)
@@ -93,8 +90,9 @@ namespace mongo {
             sendSocket = new zmq::socket_t(zmqContext, isMongos() ? ZMQ_PUSH : ZMQ_PUB);
         }
         catch (zmq::error_t& e) {
-            // TODO: turn off pubsub if initialization here fails
-            log() << "Error initializing zmq send socket." << causedBy(e);
+            log() << "Error initializing zmq send socket for PubSub." << causedBy(e);
+            pubsub = false;
+            dbevents = false;
             return NULL;
         }
         return sendSocket;
@@ -110,8 +108,9 @@ namespace mongo {
             }
         }
         catch (zmq::error_t& e) {
-            // TODO: turn off pubsub if initialization here fails
-            log() << "Error initializing zmq recv socket." << causedBy(e);
+            log() << "Error initializing zmq recv socket for PubSub." << causedBy(e);
+            pubsub = false;
+            dbevents = false;
             return NULL;
         }
         return recvSocket;
@@ -122,8 +121,9 @@ namespace mongo {
             zmq::proxy(*subscriber, *publisher, NULL);
         }
         catch (zmq::error_t& e) {
-            // TODO: turn off pubsub if proxy here fails
-            log() << "Error starting zmq proxy." << causedBy(e);
+            log() << "Error starting zmq proxy for PubSub." << causedBy(e);
+            pubsub = false;
+            dbevents = false;
         }
     }
 

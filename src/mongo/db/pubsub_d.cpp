@@ -58,6 +58,10 @@ namespace mongo {
             // is pull socket if config, sub socket if mongod
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
+            // error occurred while initializing sockets
+            if (!pubsub)
+                return;
+
             // config servers must be started with --configsvr to
             // use pubsub within a sharded cluster
             if (serverGlobalParams.configsvr) {
@@ -78,8 +82,11 @@ namespace mongo {
                     PubSubSendSocket::extSendSocket->bind(kExtPubEndpoint.c_str());
                 }
                 catch (zmq::error_t& e) {
-                    // TODO: turn off pubsub if connection here fails
-                    log() << "Error initializing pubsub sockets." << causedBy(e);
+                    log() << "Error initializing PubSub sockets. Turning off PubSub..."
+                          << causedBy(e);
+                    pubsub = false;
+                    dbevents = false;
+                    return;
                 }
 
                 // automatically proxy messages from PULL endpoint to PUB endpoint
@@ -107,8 +114,11 @@ namespace mongo {
                     PubSub::intPubSocket.bind(PubSub::kIntPubSubEndpoint);
                 }
                 catch (zmq::error_t& e) {
-                    // TODO: turn off pubsub if connection here fails
-                    log() << "Could not initialize PubSub sockets: " << causedBy(e);
+                    log() << "Error initializing PubSub sockets. Turning off PubSub..."
+                          << causedBy(e);
+                    pubsub = false;
+                    dbevents = false;
+                    return;
                 }
 
                 // proxy incoming messages to internal publisher to be received by clients
@@ -125,6 +135,8 @@ namespace mongo {
     };
 
     void startPubsubBackgroundJob() {
+        if (!pubsub)
+            return;
         PubSubCleanup* pubSubCleanup = new PubSubCleanup();
         pubSubCleanup->go();
     }

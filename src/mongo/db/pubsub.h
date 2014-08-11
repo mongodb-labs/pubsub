@@ -39,6 +39,9 @@
 
 namespace mongo {
 
+    extern bool pubsub;
+    extern bool dbevents;
+
     typedef OID SubscriptionId;
 
     // contains information about a message

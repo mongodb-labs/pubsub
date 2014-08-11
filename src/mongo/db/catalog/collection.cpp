@@ -191,12 +191,14 @@ namespace mongo {
         if ( status.isOK() ) {
             _details->paddingFits();
 
-            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
-                                         "type" << "insert" <<
-                                         "doc" << docToInsert);
-            bool success = PubSubSendSocket::publish("$events", publishObject);
-            if (!success)
-                log() << "Error publishing DB event." << endl;
+            if (dbevents) {
+                BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                             "type" << "insert" <<
+                                             "doc" << docToInsert);
+                bool success = PubSubSendSocket::publish("$events", publishObject);
+                if (!success)
+                    log() << "Error publishing DB event." << endl;
+            }
         }
 
         return status;
@@ -219,12 +221,14 @@ namespace mongo {
         if ( !status.isOK() )
             return StatusWith<DiskLoc>( status );
 
-        BSONObj publishObject = BSON("namespace" << _ns.ns() <<
-                                     "type" << "insert" <<
-                                     "doc" << doc);
-        bool success = PubSubSendSocket::publish("$events", publishObject);
-        if (!success)
-            log() << "Error publishing DB event." << endl;
+        if (dbevents) {
+            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                         "type" << "insert" <<
+                                         "doc" << doc);
+            bool success = PubSubSendSocket::publish("$events", publishObject);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
+        }
 
         return loc;
     }
@@ -280,12 +284,14 @@ namespace mongo {
 
         BSONObj doc = docFor( loc );
 
-        BSONObj publishObject = BSON("namespace" << _ns.ns() <<
-                                     "type" << "remove" <<
-                                     "doc" << doc);
-        bool success = PubSubSendSocket::publish("$events", publishObject);
-        if (!success)
-            log() << "Error publishing DB event." << endl;
+        if (dbevents) {
+            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                         "type" << "remove" <<
+                                         "doc" << doc);
+            bool success = PubSubSendSocket::publish("$events", publishObject);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
+        }
 
         if ( deletedId ) {
             BSONElement e = doc["_id"];
