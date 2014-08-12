@@ -38,7 +38,7 @@
 
 namespace mongo {
 
-    MONGO_EXPORT_SERVER_PARAMETER(pubsub, bool, false);
+    MONGO_EXPORT_SERVER_PARAMETER(pubsub, bool, true);
     MONGO_EXPORT_SERVER_PARAMETER(dbevents, bool, false);
 
     SimpleMutex PubSubSendSocket::sendMutex("zmqsend");
