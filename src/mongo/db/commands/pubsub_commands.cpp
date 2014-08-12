@@ -126,6 +126,8 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
+            uassert(18556, "PubSub is not enabled.", pubsub);
+
             BSONElement channelElem = cmdObj[kPublishField];
 
             // ensure that the channel is a string
@@ -208,6 +210,8 @@ namespace mongo {
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
+
+            uassert(18557, "PubSub is not enabled.", pubsub);
 
             BSONElement channelElem = cmdObj[kSubscribeField];
 
@@ -308,6 +312,8 @@ namespace mongo {
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
+
+            uassert(18558, "PubSub is not enabled.", pubsub);
 
             BSONElement oidElement = cmdObj[kPollField];
 
@@ -431,6 +437,8 @@ namespace mongo {
 
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
+
+            uassert(18559, "PubSub is not enabled.", pubsub);
 
             BSONElement oidElement = cmdObj[kUnsubscribeField];
             std::set<OID> oids;
