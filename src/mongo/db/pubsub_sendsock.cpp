@@ -38,6 +38,7 @@
 
 namespace mongo {
 
+    // Server Parameters for enabling pubsub and DB event notifications
     MONGO_EXPORT_SERVER_PARAMETER(pubsub, bool, true);
     MONGO_EXPORT_SERVER_PARAMETER(dbevents, bool, false);
 
