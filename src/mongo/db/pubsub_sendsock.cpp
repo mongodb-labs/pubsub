@@ -117,6 +117,7 @@ namespace mongo {
                                                  << ":" << hp.port() + 1234;
 
             try {
+                SimpleMutex::scoped_lock lk(sendMutex); 
                 extSendSocket->connect(endpoint.c_str());
             }
             catch (zmq::error_t& e) {
@@ -140,6 +141,7 @@ namespace mongo {
                                                          << ":" << it->first.port() + 1234;
 
                     try {
+                        SimpleMutex::scoped_lock lk(sendMutex); 
                         extSendSocket->disconnect(endpoint.c_str());
                     }
                     catch (zmq::error_t& e) {
