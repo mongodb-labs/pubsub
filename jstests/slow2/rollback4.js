@@ -2,7 +2,8 @@
 
 var replTest = new ReplSetTest({ name: 'unicomplex', 
                                  nodes: 3, 
-                                 oplogSize: 2000 });
+                                 oplogSize: 2000,
+                              });
 var nodes = replTest.nodeList();
 
 var conns = replTest.startSet();
@@ -30,12 +31,11 @@ replTest.awaitReplication();
 
 // Insert into master
 var big = { b:new Array( 1000 ).toString() };
+var bulk = master.getDB('db').c.initializeUnorderedBulkOp();
 for( var i = 0; i < 1000000; ++i ) {
-    if ( i % 10000 == 0 ) {
-        print( i );
-    }
-	master.getDB( 'db' ).c.insert( big );
+    bulk.insert( big );
 }
+assert.writeOK(bulk.execute());
 
 // Stop master
 replTest.stop( 0 );
