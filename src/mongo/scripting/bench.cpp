@@ -114,6 +114,7 @@ namespace mongo {
         insertCounter.updateFrom(other.insertCounter);
         deleteCounter.updateFrom(other.deleteCounter);
         queryCounter.updateFrom(other.queryCounter);
+        commandCounter.updateFrom(other.commandCounter);
 
         for (size_t i = 0; i < other.trappedErrors.size(); ++i)
             trappedErrors.push_back(other.trappedErrors[i]);
@@ -411,8 +412,12 @@ namespace mongo {
                     else if ( op == "command" ) {
 
                         BSONObj result;
-                        conn->runCommand( ns, fixQuery( e["command"].Obj(), bsonTemplateEvaluator ),
+
+                        {
+                            BenchRunEventTrace _bret(&_stats.commandCounter);
+                            conn->runCommand( ns, fixQuery( e["command"].Obj(), bsonTemplateEvaluator ),
                                           result, e["options"].numberInt() );
+                        }
 
                         if( check ){
                             int err = scope->invoke( scopeFunc , 0 , &result,  1000 * 60 , false );
@@ -745,25 +750,6 @@ namespace mongo {
      }
 
      void BenchRunner::start( ) {
-
-
-         {
-             boost::scoped_ptr<DBClientBase> conn( _config->createConnection() );
-             // Must authenticate to admin db in order to run serverStatus command
-             if (_config->username != "") {
-                 string errmsg;
-                 if (!conn->auth("admin", _config->username, _config->password, errmsg)) {
-                     uasserted(16704, 
-                               str::stream() << "User " << _config->username 
-                               << " could not authenticate to admin db; admin db access is "
-                               "required to use benchRun with auth enabled");
-                 }
-             }
-             // Get initial stats
-             conn->simpleCommand( "admin" , &before , "serverStatus" );
-             before = before.getOwned();
-         }
-
          // Start threads
          for ( unsigned i = 0; i < _config->parallel; i++ ) {
              BenchRunWorker *worker = new BenchRunWorker(_config.get(), &_brState);
@@ -777,23 +763,6 @@ namespace mongo {
      void BenchRunner::stop() {
          _brState.tellWorkersToFinish();
          _brState.waitForState(BenchRunState::BRS_FINISHED);
-
-         {
-             boost::scoped_ptr<DBClientBase> conn( _config->createConnection() );
-             if (_config->username != "") {
-                 string errmsg;
-                 // this can only fail if admin access was revoked since start of run
-                 if (!conn->auth("admin", _config->username, _config->password, errmsg)) {
-                     uasserted(16705,
-                               str::stream() << "User " << _config->username 
-                               << " could not authenticate to admin db; admin db access is "
-                               "still required to use benchRun with auth enabled");
-                 }
-             }
-             // Get final stats
-             conn->simpleCommand( "admin" , &after , "serverStatus" );
-             after = after.getOwned();
-         }
 
          {
              boost::mutex::scoped_lock lk(_staticMutex);
@@ -816,25 +785,15 @@ namespace mongo {
         stats->reset();
         for ( size_t i = 0; i < _workers.size(); ++i )
             stats->updateFrom( _workers[i]->stats() );
-        BSONObj before = this->before["opcounters"].Obj();
-        BSONObj after = this->after["opcounters"].Obj();
-        {
-             BSONObjIterator i( after );
-             while ( i.more() ) {
-                 BSONElement e = i.next();
-                 long long delta = e.numberLong();
-                 delta -= before[e.fieldName()].numberLong();
-                 stats->opcounters[e.fieldName()] = delta;
-             }
-        }
+
     }
 
-     static void appendAverageMicrosIfAvailable(
-             BSONObjBuilder &buf, const std::string &name, const BenchRunEventCounter &counter) {
-
+     static void appendAverageMicrosIfAvailable(BSONObjBuilder &buf,
+                                                const std::string &name,
+                                                const BenchRunEventCounter &counter) {
          if (counter.getNumEvents() > 0)
-             buf.append(name,
-                        static_cast<double>(counter.getTotalTimeMicros()) / counter.getNumEvents());
+             buf.append(name, 1000000 * ((double)counter.getNumEvents()
+                              / counter.getTotalTimeMicros()));
      }
 
      BSONObj BenchRunner::finish( BenchRunner* runner ) {
@@ -844,40 +803,23 @@ namespace mongo {
          BenchRunStats stats;
          runner->populateStats(&stats);
 
-         // vector<BSONOBj> errors = runner->config.errors;
          bool error = stats.error;
 
          if ( error )
              return BSON( "err" << 1 );
 
-         // compute actual ops/sec
-         BSONObj before = runner->before["opcounters"].Obj();
-         BSONObj after = runner->after["opcounters"].Obj();
-
          BSONObjBuilder buf;
-         buf.append( "note" , "values per second" );
          buf.append( "errCount", (long long) stats.errCount );
          buf.append( "trapped", "error: not implemented" );
-         appendAverageMicrosIfAvailable(buf, "findOneLatencyAverageMicros", stats.findOneCounter);
-         appendAverageMicrosIfAvailable(buf, "insertLatencyAverageMicros", stats.insertCounter);
-         appendAverageMicrosIfAvailable(buf, "deleteLatencyAverageMicros", stats.deleteCounter);
-         appendAverageMicrosIfAvailable(buf, "updateLatencyAverageMicros", stats.updateCounter);
-         appendAverageMicrosIfAvailable(buf, "queryLatencyAverageMicros", stats.queryCounter);
-
-         {
-             BSONObjIterator i( after );
-             while ( i.more() ) {
-                 BSONElement e = i.next();
-                 double x = e.number();
-                 x -= before[e.fieldName()].number();
-                 buf.append( e.fieldName() , x / runner->_config->seconds );
-             }
-         }
-
-         BSONObj zoo = buf.obj();
+         appendAverageMicrosIfAvailable(buf, "averageFindOnesPerSecond", stats.findOneCounter);
+         appendAverageMicrosIfAvailable(buf, "averageInsertsPerSecond", stats.insertCounter);
+         appendAverageMicrosIfAvailable(buf, "averageDeletesPerSecond", stats.deleteCounter);
+         appendAverageMicrosIfAvailable(buf, "averageUpdatesPerSecond", stats.updateCounter);
+         appendAverageMicrosIfAvailable(buf, "averageQueriesPerSecond", stats.queryCounter);
+         appendAverageMicrosIfAvailable(buf, "averageCommandsPerSecond", stats.commandCounter);
 
          delete runner;
-         return zoo;
+         return buf.obj();
      }
 
      boost::mutex BenchRunner::_staticMutex;
