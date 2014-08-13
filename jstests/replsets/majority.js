@@ -57,11 +57,15 @@ config.version = 2;
 config.members.pop();
 config.members.pop();
 
+print("before assertsoon");
+
 // wait for nodes 3 and 4 to come back as arbiters
 assert.soon(function() {
     var status = master.getDB("admin").runCommand({replSetGetStatus:1});
     return status.members[3].state == 7 && status.members[4].state == 7;
 });
+
+print("after assertsoon that members 3 and 4 are in state 7")
 
 try {
     master.getDB("admin").runCommand({replSetReconfig : config});
@@ -70,9 +74,15 @@ catch (e) {
     print("reconfig error: "+e);
 }
 
+print("after running reconfig");
+
 replTest.awaitReplication();
 
+print("after awaiting replication");
+
 replTest.bridge();
+
+print("after bridge");
 
 master = replTest.getMaster();
 
@@ -120,4 +130,5 @@ assert.contains(config.members[0], result);
 assert.contains(config.members[1], result);
 assert.contains(config.members[2], result);
 
+print("finished test; right before stopset");
 replTest.stopSet();
