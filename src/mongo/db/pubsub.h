@@ -39,6 +39,11 @@
 
 namespace mongo {
 
+    // Server Parameters signaling whether pubsub and db events are enabled
+    // pubsub defaults to true, dbevents to false
+    extern bool pubsub;
+    extern bool dbevents;
+
     typedef OID SubscriptionId;
 
     // contains information about a message
@@ -48,39 +53,28 @@ namespace mongo {
         std::string channel;
         BSONObj message;
         unsigned long long timestamp;
+
         SubscriptionMessage(SubscriptionId _subscriptionId,
                             std::string _channel,
                             BSONObj _message,
-                            unsigned long long _timestamp) {
-            subscriptionId = _subscriptionId;
-            channel = _channel;
-            message = _message;
-            timestamp = _timestamp;
-        }
+                            unsigned long long _timestamp);
 
-        friend bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2) {
-            if (m1.subscriptionId < m2.subscriptionId)
-                return true;
-            if (m1.subscriptionId == m2.subscriptionId && m1.channel < m2.channel)
-                return true;
-            if (m1.subscriptionId == m2.subscriptionId &&
-                m1.channel == m2.channel &&
-                m1.timestamp > m2.timestamp)
-                return true;
-            return false;
-        }
+        friend bool operator<(const SubscriptionMessage& m1, const SubscriptionMessage& m2);
     };
 
     class PubSub {
     public:
 
         // outwards-facing interface for pubsub communication across replsets and clusters
-        static bool publish(const string& channel, const BSONObj& message);
-        static SubscriptionId subscribe(const string& channel, const BSONObj& filter,
+        static SubscriptionId subscribe(const string& channel,
+                                        const BSONObj& filter,
                                         const BSONObj& projection);
-        static std::priority_queue<SubscriptionMessage>
-            poll(std::set<SubscriptionId>& subscriptionIds, long timeout, long long& millisPolled,
-                 bool& pollAgain, std::map<SubscriptionId, std::string>& errors);
+        static std::priority_queue<SubscriptionMessage> poll(
+                std::set<SubscriptionId>& subscriptionIds,
+                long timeout,
+                long long& millisPolled,
+                bool& pollAgain,
+                std::map<SubscriptionId, std::string>& errors);
         // force is an option used internally if a poll is interrupted by an unsubscribe to 
         // allow the unsubscribe to happen without having to check the subscription in and
         // back out. it is always false if this method is called from the unsubscribe command.
@@ -133,43 +127,43 @@ namespace mongo {
         static const long maxPollInterval;
 
         // data structure mapping SubscriptionId to subscription info
-        static std::map<SubscriptionId, SubscriptionInfo*> subscriptions;
+        typedef std::map<SubscriptionId, shared_ptr<SubscriptionInfo> > SubscriptionMap;
+        static SubscriptionMap subscriptions;
 
         // for locking around the subscriptions map in subscribe, poll, and unsubscribe
         static SimpleMutex mapMutex;
 
-        // for locking around publish, because it uses a non-thread-safe zmq socket
-        static SimpleMutex sendMutex;
-
         // Helper method to end all polls on subscriptions passed in. This is used in the case
         // that poll() gets cut off by an error or by hitting the max poll timeout.
-        static void endCurrentPolls(std::vector<std::pair<SubscriptionId,
-                                                          SubscriptionInfo*> >& subs);
+        typedef std::vector<std::pair<SubscriptionId,
+                                      shared_ptr<SubscriptionInfo> > > SubscriptionVector;
+        static void endCurrentPolls(SubscriptionVector& subs);
 
         // Gets the SubscriptionInfo object for each SubscriptionId passed in. Fills in the
         // subs vector with the subscription info and the items vector with zmq::pollitem_t's
         // that correspond to those subscriptions for polling. In the event of an error finding
         // subscriptions, this method inserts an error message in the errors map for the given
         // SubscriptionId.
-        static void getSubscriptions(std::set<SubscriptionId>& subscriptionIds,
-                                     std::vector<zmq::pollitem_t>& items,
-                                     std::vector<std::pair<SubscriptionId,
-                                                           SubscriptionInfo*> >& subs,
-                                     std::map<SubscriptionId, std::string>& errors);
+        static void getSubscriptions(
+                std::set<SubscriptionId>& subscriptionIds,
+                std::vector<zmq::pollitem_t>& items,
+                SubscriptionVector& subs,
+                std::map<SubscriptionId, std::string>& errors);
 
         // Methods to check subscriptions and their corresponding sockets in and out to ensure
         // thread safe use. If you check out a socket, you are guaranteed that no other threads
         // can check out the socket until you check it back in. This is acheived by setting
         // and checkingthe bits in the SubscriptionInfo struct. If there is an error
         // checking a socket out, checkoutSocket returns NULL and sets the error message.
-        static SubscriptionInfo* checkoutSocket(SubscriptionId subscriptionId, std::string& errmsg);
-        static void checkinSocket(SubscriptionInfo* s);
+        static shared_ptr<SubscriptionInfo> checkoutSocket(SubscriptionId subscriptionId,
+                                                           std::string& errmsg);
+        static void checkinSocket(shared_ptr<SubscriptionInfo> s);
 
         // This method receives messages on all subscriptions passed in. In the event of an error,
         // this method inserts an error message in the errors map for the given SubscriptionId.
-        static std::priority_queue<SubscriptionMessage>
-                recvMessages(std::vector<std::pair<SubscriptionId, SubscriptionInfo*> >& subs,
-                             std::map<SubscriptionId, std::string>& errors);
+        static std::priority_queue<SubscriptionMessage> recvMessages(
+                SubscriptionVector& subs,
+                std::map<SubscriptionId, std::string>& errors);
     };
 
 }  // namespace mongo

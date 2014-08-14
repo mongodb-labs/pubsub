@@ -38,6 +38,7 @@
 #include "mongo/db/catalog/database.h"
 #include "mongo/db/catalog/index_create.h"
 #include "mongo/db/index/index_access_method.h"
+#include "mongo/db/pubsub_sendsock.h"
 #include "mongo/db/structure/catalog/namespace_details.h"
 #include "mongo/db/repl/rs.h"
 #include "mongo/db/storage/extent.h"
@@ -189,6 +190,15 @@ namespace mongo {
         StatusWith<DiskLoc> status = _insertDocument( docToInsert, enforceQuota, preGen );
         if ( status.isOK() ) {
             _details->paddingFits();
+
+            if (dbevents) {
+                BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                             "type" << "insert" <<
+                                             "doc" << docToInsert);
+                bool success = PubSubSendSocket::publish("$events", publishObject);
+                if (!success)
+                    log() << "Error publishing DB event." << endl;
+            }
         }
 
         return status;
@@ -210,6 +220,15 @@ namespace mongo {
         Status status = indexBlock.insert( doc, loc.getValue(), indexOptions );
         if ( !status.isOK() )
             return StatusWith<DiskLoc>( status );
+
+        if (dbevents) {
+            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                         "type" << "insert" <<
+                                         "doc" << doc);
+            bool success = PubSubSendSocket::publish("$events", publishObject);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
+        }
 
         return loc;
     }
@@ -264,6 +283,15 @@ namespace mongo {
         }
 
         BSONObj doc = docFor( loc );
+
+        if (dbevents) {
+            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                                         "type" << "remove" <<
+                                         "doc" << doc);
+            bool success = PubSubSendSocket::publish("$events", publishObject);
+            if (!success)
+                log() << "Error publishing DB event." << endl;
+        }
 
         if ( deletedId ) {
             BSONElement e = doc["_id"];

@@ -1009,7 +1009,8 @@ env.Install( '#/', [
         env.Program( "bsondump", ["tools/bsondump.cpp", "tools/bsondump_options_init.cpp"],
                      LIBDEPS=["alltools", "bsondump_options"]),
         env.Program( "mongobridge", ["tools/bridge.cpp", "tools/mongobridge_options_init.cpp"],
-                     LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub", "mongobridge_options"] ),
+                     LIBDEPS=["serveronly", "coreserver", "coredb",
+                              "pubsub", "mongobridge_options"] ),
         env.Program( "mongoperf", "client/examples/mongoperf.cpp",
                      LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub"] ),
         ] )
@@ -1025,10 +1026,10 @@ env.Library("mongos_options", ["s/mongos_options.cpp"],
                      '$BUILD_DIR/mongo/util/options_parser/options_parser_init'])
 
 # mongos
-mongos = env.Program(
-    "mongos", [ "s/server.cpp", "s/mongos_options_init.cpp", "db/pubsub_s.cpp" ] ,
-    LIBDEPS=["mongoscore", "coreserver", "pubsub", "coredb", "mongocommon", "coreshard",
-             "ntservice", "mongodandmongos", "s/upgrade", "mongos_options" ])
+mongos = env.Program("mongos", [ "s/server.cpp", "s/mongos_options_init.cpp", "db/pubsub_s.cpp" ],
+                     LIBDEPS=["mongoscore", "coreserver", "pubsub", "coredb",
+                              "mongocommon", "coreshard", "ntservice", "mongodandmongos",
+                              "s/upgrade", "mongos_options" ])
 env.Install( '#/', mongos )
 
 env.Library("clientandshell", ["client/clientAndShell.cpp"],
@@ -1083,7 +1084,10 @@ test = testEnv.Install(
 if len(testEnv.subst('$PROGSUFFIX')):
     testEnv.Alias( "test", "#/${PROGPREFIX}test${PROGSUFFIX}" )
 
-env.Install( '#/', testEnv.Program( "perftest", [ "dbtests/perf/perftest.cpp" ], LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub", "testframework" ] ) )
+env.Install(
+    '#/',
+    testEnv.Program("perftest", [ "dbtests/perf/perftest.cpp" ],
+                    LIBDEPS=["serveronly", "coreserver", "coredb", "pubsub", "testframework" ] ) )
 
 # --- sniffer ---
 mongosniff_built = False
@@ -1097,8 +1101,10 @@ if darwin or env["_HAVEPCAP"]:
     else:
         sniffEnv.Append( LIBS=[ "wpcap" ] )
 
-    sniffEnv.Install( '#/', sniffEnv.Program( "mongosniff", "tools/sniffer.cpp",
-                                              LIBDEPS=["gridfs", "serveronly", "coreserver", "coredb", "pubsub"]))
+    sniffEnv.Install(
+        '#/',
+        sniffEnv.Program("mongosniff", "tools/sniffer.cpp",
+                         LIBDEPS=["gridfs", "serveronly", "coreserver", "coredb", "pubsub"]))
 
 # --- shell ---
 

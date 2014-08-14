@@ -38,6 +38,7 @@
 #include "mongo/db/auth/privilege.h"
 #include "mongo/db/commands.h"
 #include "mongo/db/pubsub.h"
+#include "mongo/db/pubsub_sendsock.h"
 
 namespace mongo {
 
@@ -48,7 +49,8 @@ namespace mongo {
         const std::string kPublishField = "publish";
         const std::string kMessageField = "message";
         const std::string kSubscribeField = "subscribe";
-        const std::string kQueryField = "query";
+        const std::string kFilterField = "filter";
+        const std::string kProjectionField = "projection";
         const std::string kPollField = "poll";
         const std::string kTimeoutField = "timeout";
         const std::string kMillisPolledField = "millisPolled";
@@ -68,19 +70,20 @@ namespace mongo {
 
             if (element.type() == jstOID) {
                 oids.insert(element.OID());
-            } else {
+            }
+            else {
                 std::vector<BSONElement> elements = element.Array();
                 for (std::vector<BSONElement>::iterator it = elements.begin();
                      it != elements.end();
                      it++) {
-                    // ensure that each member of the array is a SubscriptionId
-                    uassert(18544,
-                            mongoutils::str::stream() << "Each subscriptionId in the "
-                                                      << "subscriptionId array must be an "
-                                                      << "ObjectID but found a "
-                                                      << typeName(it->type()),
-                            it->type() == jstOID);
-                    oids.insert(it->OID());
+                        // ensure that each member of the array is a SubscriptionId
+                        uassert(18544,
+                                mongoutils::str::stream() << "Each subscriptionId in the "
+                                                          << "subscriptionId array must be an "
+                                                          << "ObjectID but found a "
+                                                          << typeName(it->type()),
+                                it->type() == jstOID);
+                        oids.insert(it->OID());
                 }
             }
         }
@@ -123,6 +126,8 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
+            uassert(18556, "PubSub is not enabled.", pubsub);
+
             BSONElement channelElem = cmdObj[kPublishField];
 
             // ensure that the channel is a string
@@ -132,6 +137,13 @@ namespace mongo {
                                               << typeName(channelElem.type()),
                     channelElem.type() == mongo::String);
 
+            string channel = channelElem.String();
+
+            // $events channel is reserved for DB events
+            uassert(18555,
+                    mongoutils::str::stream() << "The \"$events\" channel is reserved for"
+                                              << "database event notifications.",
+                    !StringData(channel).startsWith("$events"));
 
             // ensure that message argument exists
             uassert(18552,
@@ -147,10 +159,9 @@ namespace mongo {
                                               << typeName(messageElem.type()),
                     messageElem.type() == mongo::Object);
 
-            string channel = channelElem.String();
             BSONObj message = messageElem.Obj();
 
-            bool success = PubSub::publish(channel, message);
+            bool success = PubSubSendSocket::publish(channel, message);
 
             uassert(18538, "Failed to publish message.", success);
 
@@ -200,6 +211,8 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
+            uassert(18557, "PubSub is not enabled.", pubsub);
+
             BSONElement channelElem = cmdObj[kSubscribeField];
 
             // ensure that the channel is a string
@@ -212,8 +225,8 @@ namespace mongo {
 
             // TODO: validate filter format (look at find command?)
             BSONObj filter;
-            if (cmdObj.hasField("filter")){
-                BSONElement filterElem = cmdObj["filter"];
+            if (cmdObj.hasField(kFilterField)){
+                BSONElement filterElem = cmdObj[kFilterField];
                 // ensure that the filter is a BSON object
                 uassert(18553, mongoutils::str::stream() << "The filter passed to the subscribe "
                                                          << "command must be an object but was a "
@@ -224,8 +237,8 @@ namespace mongo {
 
             // TODO: validate projection format
             BSONObj projection;
-            if (cmdObj.hasField("projection")){
-                BSONElement projectionElem = cmdObj["projection"];
+            if (cmdObj.hasField(kProjectionField)){
+                BSONElement projectionElem = cmdObj[kProjectionField];
                 // ensure that the projection is a BSON object
                 uassert(18554, mongoutils::str::stream() << "The projection passed to the "
                                                          << "subscribe command must be an object "
@@ -300,6 +313,8 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
+            uassert(18558, "PubSub is not enabled.", pubsub);
+
             BSONElement oidElement = cmdObj[kPollField];
 
             std::set<OID> oids;
@@ -319,9 +334,11 @@ namespace mongo {
 
                 if (timeoutElem.type() == NumberDouble) {
                     timeout = static_cast<long>(std::floor(timeoutElem.numberDouble()));
-                } else if (timeoutElem.type() == NumberLong) {
+                }
+                else if (timeoutElem.type() == NumberLong) {
                     timeout = timeoutElem.numberLong();
-                } else {
+                }
+                else {
                     timeout = timeoutElem.numberInt();
                 }
             }
@@ -366,7 +383,7 @@ namespace mongo {
                 for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
                      it != errors.end();
                      it++) {
-                    errorBuilder.append(it->first.toString(), it->second);
+                        errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());
             }
@@ -421,6 +438,8 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
+            uassert(18559, "PubSub is not enabled.", pubsub);
+
             BSONElement oidElement = cmdObj[kUnsubscribeField];
             std::set<OID> oids;
             validate(oidElement, oids);
@@ -436,7 +455,7 @@ namespace mongo {
                 for (std::map<SubscriptionId, std::string>::iterator it = errors.begin();
                      it != errors.end();
                      it++) {
-                    errorBuilder.append(it->first.toString(), it->second);
+                        errorBuilder.append(it->first.toString(), it->second);
                 }
                 result.append(kErrorField, errorBuilder.obj());
             }

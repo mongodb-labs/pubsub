@@ -1,3 +1,5 @@
+var ps = db.PS();
+
 // subscribe without filter or projection
 var subRegular = ps.subscribe("A");
 

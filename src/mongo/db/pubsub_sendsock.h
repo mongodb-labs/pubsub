@@ -34,9 +34,25 @@
 
 namespace mongo {
 
+    // Server Parameters signaling whether pubsub and db events are enabled
+    // pubsub defaults to true, dbevents to false
+    extern bool pubsub;
+    extern bool dbevents;
+
     class PubSubSendSocket {
     public:
-        // map modifiers
+        // for locking around publish, because it uses a non-thread-safe zmq socket
+        static SimpleMutex sendMutex;
+        static zmq::context_t zmqContext;
+        static zmq::socket_t* dbEventSocket;
+
+        static bool publish(const std::string& channel, const BSONObj& message);
+        static void initSharding(const std::string configServers);
+
+        // methods that update which members of a replica set are still connected.
+        // updateReplSetMember() adds members to the set if they are not yet connected
+        // or marks them as still in use. pruneReplSetMembers() then disconnects from
+        // any members who are no longer in the replica set. both called from repl/rs.cpp
         static void updateReplSetMember(HostAndPort hp);
         static void pruneReplSetMembers();
 
