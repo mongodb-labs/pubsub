@@ -91,8 +91,8 @@ namespace mongo {
         }
         catch (zmq::error_t& e) {
             log() << "Error initializing zmq send socket for PubSub." << causedBy(e);
-            pubsub = false;
-            dbevents = false;
+            pubsubEnabled = false;
+            publishDataEvents = false;
             return NULL;
         }
         return sendSocket;
@@ -109,8 +109,8 @@ namespace mongo {
         }
         catch (zmq::error_t& e) {
             log() << "Error initializing zmq recv socket for PubSub." << causedBy(e);
-            pubsub = false;
-            dbevents = false;
+            pubsubEnabled = false;
+            publishDataEvents = false;
             return NULL;
         }
         return recvSocket;
@@ -122,8 +122,8 @@ namespace mongo {
         }
         catch (zmq::error_t& e) {
             log() << "Error starting zmq proxy for PubSub." << causedBy(e);
-            pubsub = false;
-            dbevents = false;
+            pubsubEnabled = false;
+            publishDataEvents = false;
         }
     }
 

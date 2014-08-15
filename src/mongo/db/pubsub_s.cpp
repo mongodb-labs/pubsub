@@ -53,7 +53,7 @@ namespace mongo {
             PubSub::extRecvSocket = PubSub::initRecvSocket();
 
             // error occurred while initializing sockets
-            if (!pubsub)
+            if (!pubsubEnabled)
                 return;
 
             try {
@@ -89,8 +89,8 @@ namespace mongo {
             catch (zmq::error_t& e) {
                 log() << "Error initializing PubSub sockets. Turning off PubSub..."
                       << causedBy(e);
-                pubsub = false;
-                dbevents = false;
+                pubsubEnabled = false;
+                publishDataEvents = false;
                 return;
             }
 
@@ -106,7 +106,7 @@ namespace mongo {
     };
 
     void startPubsubBackgroundJob() {
-        if (!pubsub)
+        if (!pubsubEnabled)
             return;
         PubSubCleanup* pubSubCleanup = new PubSubCleanup();
         pubSubCleanup->go();

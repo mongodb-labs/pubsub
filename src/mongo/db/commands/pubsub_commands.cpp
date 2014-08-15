@@ -126,7 +126,7 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            uassert(18556, "PubSub is not enabled.", pubsub);
+            uassert(18556, "PubSub is not enabled.", pubsubEnabled);
 
             BSONElement channelElem = cmdObj[kPublishField];
 
@@ -211,7 +211,7 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            uassert(18557, "PubSub is not enabled.", pubsub);
+            uassert(18557, "PubSub is not enabled.", pubsubEnabled);
 
             BSONElement channelElem = cmdObj[kSubscribeField];
 
@@ -223,9 +223,13 @@ namespace mongo {
 
             string channel = channelElem.String();
 
+            // Error if subscribing to DB events when they are not enabled
+            uassert(18560, "Database events are not enabled.",
+                       publishDataEvents || channel != "$events");
+
             // TODO: validate filter format (look at find command?)
             BSONObj filter;
-            if (cmdObj.hasField(kFilterField)){
+            if (cmdObj.hasField(kFilterField)) {
                 BSONElement filterElem = cmdObj[kFilterField];
                 // ensure that the filter is a BSON object
                 uassert(18553, mongoutils::str::stream() << "The filter passed to the subscribe "
@@ -237,7 +241,7 @@ namespace mongo {
 
             // TODO: validate projection format
             BSONObj projection;
-            if (cmdObj.hasField(kProjectionField)){
+            if (cmdObj.hasField(kProjectionField)) {
                 BSONElement projectionElem = cmdObj[kProjectionField];
                 // ensure that the projection is a BSON object
                 uassert(18554, mongoutils::str::stream() << "The projection passed to the "
@@ -313,7 +317,7 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            uassert(18558, "PubSub is not enabled.", pubsub);
+            uassert(18558, "PubSub is not enabled.", pubsubEnabled);
 
             BSONElement oidElement = cmdObj[kPollField];
 
@@ -438,7 +442,7 @@ namespace mongo {
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg,
                  BSONObjBuilder& result, bool fromRepl) {
 
-            uassert(18559, "PubSub is not enabled.", pubsub);
+            uassert(18559, "PubSub is not enabled.", pubsubEnabled);
 
             BSONElement oidElement = cmdObj[kUnsubscribeField];
             std::set<OID> oids;
