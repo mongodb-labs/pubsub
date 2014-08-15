@@ -226,6 +226,7 @@ namespace mongo {
         BenchRunEventCounter insertCounter;
         BenchRunEventCounter deleteCounter;
         BenchRunEventCounter queryCounter;
+        BenchRunEventCounter commandCounter;
 
         std::map<std::string, long long> opcounters;
         std::vector<BSONObj> trappedErrors;
