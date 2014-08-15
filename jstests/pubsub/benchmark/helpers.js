@@ -13,7 +13,17 @@ var printStats = function(stats) {
         }                                                                                           
     }                                                                                               
 }                                                                                                   
-                                                                                                    
+
+var sum = function(array) {
+    var sum = 0;
+    for (var i=0; i<array.length; i++)
+        sum += array[i];
+    return sum;
+}
+
+var average = function(array) {
+    return sum(array)/array.length;
+}                                                                                                    
                                                                                                     
 // maximum number of concurrent clients (aka parallel threads in benchRun)                          
 var maxClients = 5;

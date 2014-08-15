@@ -45,14 +45,10 @@ var publish = function(_messageSize, _host, _port) {
 
     // run the tests
     for (var numParallel = 1; numParallel <= maxClients; numParallel++) {
-
         var runner = new SynchronizedRunner();
-
         for (var i=0; i<numParallel; i++)
             runner.addJob(new SynchronizedJob(host, port, preSync, postSync));
-
         runner.start();
-
         stats["server"]["" + numParallel] = sum(runner.returnVals);
         stats["client"]["" + numParallel] = average(runner.returnVals); 
     }
@@ -60,67 +56,50 @@ var publish = function(_messageSize, _host, _port) {
     printStats(stats);
 }
 
-var sum = function(array) {
-    var sum = 0;
-    for (var i=0; i<array.length; i++)
-        sum += array[i]; 
-    return sum;
-}
-
-var average = function(array) {
-    return sum(array)/array.length; 
-}
-
-
 /**
  * Use benchRun to measure polls/second with an increasing number of polling clients
- **/ 
-var poll = function(messageSize) {
-    var subA = ps.subscribe("A"); 
-    var ops = [{op : "command",
-                ns : "test",
-                command : { poll : subA }
-              }];
-    var benchArgs = {ops : ops, host : db.getMongo().host, seconds : timeSecs, parallel : 1};
-    var subReadySignal = ps.subscribe("readySignal"); 
+ */
+var poll = function(_messageSize, _host, _port) {
 
-    // set up parallel shells to be simultaneously polling
-    // cannot be done through benchRun itself because requires
-    // each polling client to use its own subscriptionId
-    for (var numOtherClients = 0; numOtherClients < maxClients; numOtherClients++) {
-        var shells = [];
-        var otherClients = numOtherClients;
-        for (var i=0; i<otherClients; i++) {
-            shells[i] = startPollShell();
+    var host = _host || "localhost";
+    var port = _port || 27017;
+
+    // set up preSync and postSync functions for the publish SynchronizedJob
+    if(_messageSize == "light" || _messageSize == "heavy"){
+        var publishPreSync = 'load("jstests/pubsub/benchmark/helpers.js");' +
+            'var ops = [{ op: "command", ns: "test", command: { publish: "A" } }];';
+        if (messageSize == "light")
+            publishPreSync += 'ops[0]["command"]["message"] = lightMessage;';
+        else if (messageSize == "heavy")
+            publishPreSync += 'ops[0]["command"]["message"] = heavyMessage;';
+        else{
+            print("unknown message size " + messageSize);
+            return;
         }
+        publishPreSync += 'var benchArgs = {ops: ops, host: db.getMongo().host, seconds: timeSecs, parallel: 1};';
+        var publishPostSync = 'var res = (benchRun(benchArgs));' +
+                       '$res["averageCommandsPerSecond"]$';
+    }
 
-        // if we want to be simultaneously publishing messages,
-        // set up a parallel shell to do so
-        if (messageSize) {
-            shells[otherClients] = startPublishShell(messageSize, 1);
-            otherClients++;
-        }
+    // set up preSync and postSync functions for the poll SynchronizedJobs
+    var pollPreSync = 'load("jstests/pubsub/benchmark/helpers.js");' +
+                      'var ps = db.PS();' +
+                      'var subA = ps.subscribe("A");' + 
+                      'var ps = [{ op: "command", ns: "test", command: { poll: subA } }];';
+    var pollPostSync = 'var res = (benchRun(benchArgs));' +
+                       '$res["averageCommandsPerSecond"]$';
 
-        // wait for ready signals from all shells
-        var readyCount = 0;
-        while (readyCount < otherClients) { 
-            var res = ps.poll(subReadySignal, 1000 * 60 * 10);
-            if (res["messages"][subReadySignal.str])
-                readyCount += res["messages"][subReadySignal.str]["readySignal"].length;
-        }
+    // run the tests
+    for (var numParallel = 1; numParallel <= maxClients; numParallel++) {
+        var runner = new SynchronizedRunner();
+        for (var i=0; i<numParallel; i++)
+            runner.addJob(new SynchronizedJob(host, port, pollPreSync, pollPostSync));
+        if (publishPreSync)
+            runner.addJob(new SynchronizedJob(host, port, publishPreSync, publishPostSync));
 
-        // signal to all shells that they can start their benchrun tests
-        ps.publish("startSignal", { start : 1 });
-
-        // start our own benchRun test
-        before = db.serverStatus()["opcounters"]["command"];
-        stats["client"]["" + numOtherClients] = benchRun(benchArgs)["averageCommandsPerSecond"];
-        after = db.serverStatus()["opcounters"]["command"];
-        stats["server"]["" + numOtherClients] = (after - before)/timeSecs;
-
-        // wait for all shells to terminate before starting next batch of tests
-        for (var i=0; i<otherClients; i++)
-            shells[i]();
+        runner.start();
+        stats["server"]["" + numParallel] = sum(runner.returnVals);
+        stats["client"]["" + numParallel] = average(runner.returnVals); 
     }
 
     printStats(stats);
