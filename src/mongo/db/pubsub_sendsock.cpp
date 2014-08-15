@@ -39,8 +39,8 @@
 namespace mongo {
 
     // Server Parameters for enabling pubsub and DB event notifications
-    MONGO_EXPORT_SERVER_PARAMETER(pubsub, bool, true);
-    MONGO_EXPORT_SERVER_PARAMETER(dbevents, bool, false);
+    MONGO_EXPORT_SERVER_PARAMETER(pubsubEnabled, bool, true);
+    MONGO_EXPORT_SERVER_PARAMETER(publishDataEvents, bool, false);
 
     SimpleMutex PubSubSendSocket::sendMutex("zmqsend");
 
@@ -83,6 +83,9 @@ namespace mongo {
     }
 
     void PubSubSendSocket::initSharding(const std::string configServers) {
+        if (!pubsubEnabled)
+            return;
+
         vector<string> configdbs;
         splitStringDelim(configServers, &configdbs, ',');
 
@@ -105,12 +108,15 @@ namespace mongo {
         catch (zmq::error_t& e) {
             log() << "PubSub could not connect to config server. Turning off db events..."
                   << causedBy(e);
-            dbevents = false;
+            publishDataEvents = false;
         }
 
     }
 
     void PubSubSendSocket::updateReplSetMember(HostAndPort hp) {
+        if (!pubsubEnabled)
+            return;
+
         std::map<HostAndPort, bool>::iterator member = rsMembers.find(hp);
         if (!hp.isSelf() && member == rsMembers.end()) {
             std::string endpoint = str::stream() << "tcp://" << hp.host()
@@ -133,6 +139,9 @@ namespace mongo {
     }
 
     void PubSubSendSocket::pruneReplSetMembers() {
+        if (!pubsubEnabled)
+            return;
+
         for (std::map<HostAndPort, bool>::iterator it = rsMembers.begin();
              it != rsMembers.end();
              it++) {

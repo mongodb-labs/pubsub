@@ -1,8 +1,10 @@
 // load pubsub database events functions
 assert(load('jstests/libs/dbevents.js'));
 
-// start a cluster with 3 mongoses
-var st = new ShardingTest({name: 'pubsubClusterDbEvents', mongos: 3, config: 3});
+// start a cluster with 3 mongoses and DB events enabled
+var st = new ShardingTest({name: 'pubsubClusterDbEvents', mongos: 3, config: 3,
+                           other: {mongosOptions: {setParameter: 'publishDataEvents=1'},
+                                   shardOptions: {setParameter: 'publishDataEvents=1'}}});
 
 var db0 = st.s0.getDB('test');
 var db1 = st.s1.getDB('test');

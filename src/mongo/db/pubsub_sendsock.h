@@ -36,8 +36,8 @@ namespace mongo {
 
     // Server Parameters signaling whether pubsub and db events are enabled
     // pubsub defaults to true, dbevents to false
-    extern bool pubsub;
-    extern bool dbevents;
+    extern bool pubsubEnabled;
+    extern bool publishDataEvents;
 
     class PubSubSendSocket {
     public:

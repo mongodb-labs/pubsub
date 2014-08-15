@@ -191,7 +191,7 @@ namespace mongo {
         if ( status.isOK() ) {
             _details->paddingFits();
 
-            if (dbevents) {
+            if (pubsubEnabled && publishDataEvents) {
                 BSONObj publishObject = BSON("namespace" << _ns.ns() <<
                                              "type" << "insert" <<
                                              "doc" << docToInsert);
@@ -221,7 +221,7 @@ namespace mongo {
         if ( !status.isOK() )
             return StatusWith<DiskLoc>( status );
 
-        if (dbevents) {
+        if (pubsubEnabled && publishDataEvents) {
             BSONObj publishObject = BSON("namespace" << _ns.ns() <<
                                          "type" << "insert" <<
                                          "doc" << doc);
@@ -284,7 +284,7 @@ namespace mongo {
 
         BSONObj doc = docFor( loc );
 
-        if (dbevents) {
+        if (pubsubEnabled && publishDataEvents) {
             BSONObj publishObject = BSON("namespace" << _ns.ns() <<
                                          "type" << "remove" <<
                                          "doc" << doc);

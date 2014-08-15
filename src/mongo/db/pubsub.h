@@ -40,9 +40,9 @@
 namespace mongo {
 
     // Server Parameters signaling whether pubsub and db events are enabled
-    // pubsub defaults to true, dbevents to false
-    extern bool pubsub;
-    extern bool dbevents;
+    // pubsubEnabled defaults to true, publishDataEvents to false
+    extern bool pubsubEnabled;
+    extern bool publishDataEvents;
 
     typedef OID SubscriptionId;
 

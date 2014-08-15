@@ -6,8 +6,9 @@
 // load pubsub database events shared functions
 assert(load('jstests/libs/dbevents.js'));
 
-// start a replica set with 3 nodes
-var rs = new ReplSetTest({name: 'pubsubReplDbEvents', nodes: 3});
+// start a replica set with 3 nodes and DB events enabled
+var rs = new ReplSetTest({name: 'pubsubReplDbEvents', nodes: 3,
+                          nodeOptions: {setParameter: 'publishDataEvents=1'}});
 var nodes = rs.startSet();
 rs.initiate();
 

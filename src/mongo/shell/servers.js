@@ -809,6 +809,9 @@ function appendSetParameterArgs(argArray) {
         if (jsTest.options().useDebugTimeout) {
             argArray.push.apply(argArray, ['--setParameter', "useDebugTimeout=1"]);
         }
+        if (jsTest.options().publishDataEvents) {
+            argArray.push.apply(argArray, ['--setParameter', "publishDataEvents=1"]);
+        }
         if (jsTest.options().authMechanism && jsTest.options().authMechanism != "MONGODB-CR") {
             var hasAuthMechs = false;
             for (i in argArray) {

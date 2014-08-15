@@ -607,7 +607,7 @@ namespace mongo {
             state = runner->getNext(&oldObj, &loc);
 
             BSONObj oldObjOwned;
-            if (dbevents) 
+            if (pubsubEnabled && publishDataEvents)
                 oldObjOwned = oldObj.getOwned();
             
             const bool didYield = (oldYieldCount != curOp->numYields());
@@ -791,7 +791,7 @@ namespace mongo {
             if (docWasModified)
                 opDebug->nModified++;
 
-            if (dbevents) {
+            if (pubsubEnabled && publishDataEvents) {
                 BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
                 BSONObj publishObject = BSON("namespace" << nsString.ns() <<
                                              "type" << "update" <<
