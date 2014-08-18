@@ -1431,4 +1431,32 @@ DB.prototype.PS = function() {
     return new PS(this);
 }
 
+DB.prototype.watch = function(type) {
+    if (type && typeof type != 'string') {
+        throw Error('Type for db.watch must be a string')
+    }
+
+    if (type && !(type == 'insert' || type == 'update' && type != 'remove')) {
+        throw Error('Type for db.watch must be one of: \'insert\', \'update\', \'remove\'');
+    }
+
+    var filter = {namespace: this.toString()};
+    if (type) {
+        filter.type = type;
+    }
+
+    var ps = this.PS();
+    return ps.subscribe('$events', filter);
+}
+
+DB.prototype.poll = function(subscriptionId, timeout) {
+    var ps = this.PS();
+    return ps.poll(subscriptionId, timeout);
+}
+
+DB.prototype.unwatch = function(subscriptionId) {
+    var ps = this.PS();
+    return ps.unsubscribe(subscriptionId);
+}
+
 }());

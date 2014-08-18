@@ -223,10 +223,6 @@ namespace mongo {
 
             string channel = channelElem.String();
 
-            // Error if subscribing to DB events when they are not enabled
-            uassert(18560, "Database events are not enabled.",
-                       publishDataEvents || channel != "$events");
-
             // TODO: validate filter format (look at find command?)
             BSONObj filter;
             if (cmdObj.hasField(kFilterField)) {

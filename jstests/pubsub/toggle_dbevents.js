@@ -8,22 +8,19 @@ db.adminCommand({setParameter: 1, publishDataEvents: true});
 testPubSubDataEvents(db);
 
 // subscribe to data events before disabling them
-var ps = db.PS();
-var channel = '$events';
-var namespace = db + ".pubsub"
-var filter = {namespace: namespace};
-var eventSub = ps.subscribe(channel, filter);
+var eventSub = db.pubsub.watch();
 
 // disable data events
 db.adminCommand({setParameter: 1, publishDataEvents: false});
 
 // ensure that subscriptions to data events fail. use db.runCommand here
 // to bypass shell-level checks
-assert.commandFailedWithCode(db.runCommand({subscribe: channel, filter: filter}),
+var filter = {namespace: db.pubsub.toString()};
+assert.commandFailedWithCode(db.runCommand({subscribe: '$events', filter: filter}),
                              kDBEventsDisabled);
 
 // ensure that there are no data events
-var res = ps.poll(eventSub);
+var res = db.pubsub.poll(eventSub);
 assert.eq(res.messages, {});
 
 // insert and remove a document
@@ -32,11 +29,11 @@ db.pubsub.insert(doc)
 db.pubsub.remove(doc);
 
 // ensure that there are no data events
-res = ps.poll(eventSub);
+res = db.pubsub.poll(eventSub);
 assert.eq(res.messages, {});
 
 // clean up subscription
-ps.unsubscribe(eventSub);
+db.pubsub.unwatch(eventSub);
 
 // enable data events and ensure data events work
 db.adminCommand({setParameter: 1, publishDataEvents: true});
