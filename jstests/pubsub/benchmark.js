@@ -1,31 +1,22 @@
 load("jstests/pubsub/benchmark/helpers.js");
 load("src/mongo/shell/synchronized.js");
 
-var test = function(){
-    var runner = new SynchronizedRunner();
-
-    var preSync = 'print("preSync done!");';
-    var postSync = 'print("postSync done!"); $"im the return value from job1"$';
-    var host = 'localhost';
-    var port = 27017;
-
-    var job1 = new SynchronizedJob(host, port, preSync, postSync);
-    runner.addJob(job1);
-
-    runner.start();
-
-    for(var i=0; i<runner.returnVals.length; i++){
-        printjson(runner.returnVals[i]);
-    } 
+var parseAddresses = function(_addrs) {
+    var addrs = [];
+    for (var i=0; i<_addrs.length; i++) {
+        var host = _addrs[i].substring(0, _addrs[i].indexOf(":")); 
+        var port = _addrs[i].substring(_addrs[i].indexOf(":")+1, _addrs[i].length);
+        addrs[i] = { host : host, port : port }; 
+    }
+    return addrs;
 }
 
 /**
  * Use benchRun to measure publishes/second with an increasing number of publishing clients
  */
-var publish = function(_messageSize, _host, _port) {
+var publish = function(_messageSize, _addrs) {
 
-    var host = _host || "localhost";
-    var port = _port || 27017;
+    var addrs = parseAddresses(_addrs);
     var messageSize = messageSize || "light";
 
     // set up preSync and postSync functions for the publish SynchronizedJobs
@@ -46,11 +37,16 @@ var publish = function(_messageSize, _host, _port) {
     // run the tests
     for (var numParallel = 1; numParallel <= maxClients; numParallel++) {
         var runner = new SynchronizedRunner();
-        for (var i=0; i<numParallel; i++)
-            runner.addJob(new SynchronizedJob(host, port, preSync, postSync));
+        for (var i=1; i<=numParallel; i++) {
+            // round robin the jobs across the hosts
+            var addr = addrs[i%addrs.length];
+            runner.addJob(new SynchronizedJob(addr.host, addr.port, preSync, postSync));
+        }
         runner.start();
         stats["server"]["" + numParallel] = sum(runner.returnVals);
         stats["client"]["" + numParallel] = average(runner.returnVals); 
+  
+        printStats(stats);
     }
 
     printStats(stats);
@@ -61,7 +57,14 @@ var publish = function(_messageSize, _host, _port) {
  */
 var poll = function(_messageSize, _host, _port) {
 
-    var host = _host || "localhost";
+    var host;
+    if (typeof _host == "object" && _host.length > 0)
+        host = _host;
+    else if (typeof _host == "string" && _host.length > 0)
+        host = _host
+    else
+    host = "localhost";
+
     var port = _port || 27017;
 
     // set up preSync and postSync functions for the publish SynchronizedJob
@@ -92,8 +95,9 @@ var poll = function(_messageSize, _host, _port) {
     // run the tests
     for (var numParallel = 1; numParallel <= maxClients; numParallel++) {
         var runner = new SynchronizedRunner();
+
         for (var i=0; i<numParallel; i++)
-            runner.addJob(new SynchronizedJob(host, port, pollPreSync, pollPostSync));
+            runner.addJob(new SynchronizedJob(host[host.length%i], port, preSync, postSync));
         if (publishPreSync)
             runner.addJob(new SynchronizedJob(host, port, publishPreSync, publishPostSync));
 

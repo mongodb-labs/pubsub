@@ -26,7 +26,7 @@ var average = function(array) {
 }                                                                                                    
                                                                                                     
 // maximum number of concurrent clients (aka parallel threads in benchRun)                          
-var maxClients = 5;
+var maxClients = 20;
                                                                                                     
 // time to run each parallel thread in benchRun                                                     
 var timeSecs = 5; 

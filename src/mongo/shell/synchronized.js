@@ -1,3 +1,24 @@
+/**
+ * For testing SynchronizedRunner and SynchronizedJob
+ */
+var test = function(){
+    var runner = new SynchronizedRunner();
+
+    var preSync = 'print("preSync done!");';
+    var postSync = 'print("postSync done!"); $"im the return value from job1"$';
+    var host = 'localhost';
+    var port = 27017;
+
+    var job1 = new SynchronizedJob(host, port, preSync, postSync);
+    runner.addJob(job1);
+
+    runner.start();
+
+    for(var i=0; i<runner.returnVals.length; i++){
+        printjson(runner.returnVals[i]);
+    }
+}
+
 var LONGPOLL = 1000 * 60 * 10 // 10 minutes
 
 /**
@@ -30,15 +51,17 @@ SynchronizedJob.prototype.run = function() {
 
     var init = 'var ps = db.PS();';
 
-    // TODO: clean up to publish to channel "+ id.str"
     var sync =
         'var subStartSignal = ps.subscribe("startSignal_' + this.runnerId.str + '");' +
         'ps.publish("readySignal_' + this.runnerId.str + '", {ok:1});' +
         'while (!ps.poll(subStartSignal, 1000 * 60 * 10)["messages"][subStartSignal.str]) {}'; 
 
-    var end = 'printjson(ps.publish("endSignal_' + this.runnerId.str + '", ' + 
+    var end = 'var subTerminateSignal = ps.subscribe("terminateSignal_' + this.runnerId.str + '");' +
+              'printjson(ps.publish("endSignal_' + this.runnerId.str + '", ' + 
                           '{ return :' + this.toReturn + ',' +
-                            'jobId :' + this.jobId + '}));';
+                            'jobId :' + this.jobId + '}));' + 'print("sent end signal from' + this.jobId + '");' +
+              'while (!ps.poll(subTerminateSignal, 1000 * 60 * 10)["messages"][subTerminateSignal.str]) {}' +
+              'print("got terminate signal");';
 
     var eval = init + this.preSync + sync + this.postSync + end;
     var pid = startMongoProgramNoConnect("mongo",
@@ -105,10 +128,14 @@ SynchronizedRunner.prototype.start = function() {
             count += messages.length;
             for (var i=0; i<messages.length; i++) {
                 this.returnVals[messages[i]["jobId"]] = messages[i]["return"]; 
+                print("got end signal for" + messages[i]["jobId"] );
             }
         }
     }
- 
+
+    ps.publish("terminateSignal_" + this.runnerId.str, {ok:1});
+    print("sent terminate signal\n\n"); 
+
     // terminate all jobs   
     for (var i=0; i<this.jobs.length; i++) {
         waitProgram(this.pids[i]);
@@ -117,5 +144,7 @@ SynchronizedRunner.prototype.start = function() {
               " on " +  this.jobs[i].host +
               ":" + this.jobs[i].port);
     } 
+
+    print("terminated synchronized runner");
 
 }
