@@ -24,9 +24,6 @@ var testPubSubDataEvents = function(subdb, pubdb) {
     // subscribe to all events on the publisher DB's pubsub collection
     var channel = '$events';
     var namespace = pubdb + ".pubsub"
-
-    // TODO: rewrite shell helpers to take a DB
-    // until this is done, shell will crash after completion of tests
     var filter = {namespace: namespace};
     var eventSub = subscriber.subscribe(channel, filter);
     var res, msg;
