@@ -377,6 +377,8 @@ namespace mongo {
                 messagesBuilder.append(currId.toString(), channelBuilder.obj());
             }
 
+            printf("messages: %s\n", messagesBuilder.asTempObj().toString().c_str());
+
             result.append(kMessagesField, messagesBuilder.obj());
             result.append(kMillisPolledField, millisPolled);
             if (pollAgain)

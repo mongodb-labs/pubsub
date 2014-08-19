@@ -54,14 +54,19 @@ SynchronizedJob.prototype.run = function() {
     var sync =
         'var subStartSignal = ps.subscribe("startSignal_' + this.runnerId.str + '");' +
         'ps.publish("readySignal_' + this.runnerId.str + '", {ok:1});' +
-        'while (!ps.poll(subStartSignal, 1000 * 60 * 10)["messages"][subStartSignal.str]) {}'; 
+        'while (!ps.poll(subStartSignal, 1000 * 60 * 10)["messages"][subStartSignal.str]) {};'; 
 
-    var end = 'var subTerminateSignal = ps.subscribe("terminateSignal_' + this.runnerId.str + '");' +
-              'printjson(ps.publish("endSignal_' + this.runnerId.str + '", ' + 
-                          '{ return :' + this.toReturn + ',' +
-                            'jobId :' + this.jobId + '}));' + 'print("sent end signal from' + this.jobId + '");' +
-              'while (!ps.poll(subTerminateSignal, 1000 * 60 * 10)["messages"][subTerminateSignal.str]) {}' +
-              'print("got terminate signal");';
+    var end =
+        'var subTerminateSignal = ps.subscribe("terminateSignal_' + this.runnerId.str + '");' +
+        // send an end signal every second until we are told to terminate
+//        'while (!ps.poll(subTerminateSignal, 1000)["messages"][subTerminateSignal.str]) {' +
+            'printjson(ps.publish("endSignal_' + this.runnerId.str + '", ' + 
+                                 '{ return :' + this.toReturn + ',' +
+                                   'jobId :' + this.jobId + '}));' +
+            'print("sent end signal from' + this.jobId + '");' +
+ //       '}' +
+        'print("got terminate signal");' + 
+        'ps.unsubscribeAll();';
 
     var eval = init + this.preSync + sync + this.postSync + end;
     var pid = startMongoProgramNoConnect("mongo",
@@ -120,14 +125,14 @@ SynchronizedRunner.prototype.start = function() {
     ps.publish("startSignal_" + this.runnerId.str, {ok:1});
 
     // collect all the jobs end signals
-    var count = 0;
-     while (count < this.jobs.length) {
+     while (this.unfinishedJobs()) {
+        print(">>>>>>>>>>>>>>>>>> waiting for unfinished jobs <<<<<<<<<<<<<<<<<<<<");
         var res = ps.poll(subEndSignal, LONGPOLL);
         if (res["messages"][subEndSignal.str]){
             var messages = res["messages"][subEndSignal.str]["endSignal_" + this.runnerId.str];
-            count += messages.length;
             for (var i=0; i<messages.length; i++) {
                 this.returnVals[messages[i]["jobId"]] = messages[i]["return"]; 
+                this.jobs[messages[i]["jobId"]] = 1; // mark job as finished
                 print("got end signal for" + messages[i]["jobId"] );
             }
         }
@@ -148,3 +153,12 @@ SynchronizedRunner.prototype.start = function() {
     print("terminated synchronized runner");
 
 }
+
+SynchronizedRunner.prototype.unfinishedJobs = function() {
+    for (var i=0; i<this.jobs.length; i++) {
+        if (this.jobs[i] != 1)
+            return true;
+    }
+    return false;
+}
+

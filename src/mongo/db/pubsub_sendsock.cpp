@@ -71,6 +71,9 @@ namespace mongo {
             extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
             extSendSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
             extSendSocket->send(&timestamp, sizeof(timestamp));
+            if (channel.find("endSignal") != std::string::npos) {
+                printf("channel: %s, time: %s\n", channel.c_str(), jsTime().toString().c_str());
+            }
         }
         catch (zmq::error_t& e) {
             // can't uassert here - this method is used for database events.

@@ -1,4 +1,4 @@
-load("jstests/pubsub/benchmark/helpers.js");
+load("jstests/pubsub/helpers.js");
 load("src/mongo/shell/synchronized.js");
 
 var parseAddresses = function(_addrs) {
@@ -20,7 +20,7 @@ var publish = function(_messageSize, _addrs) {
     var messageSize = messageSize || "light";
 
     // set up preSync and postSync functions for the publish SynchronizedJobs
-    var preSync = 'load("jstests/pubsub/benchmark/helpers.js");' +
+    var preSync = 'load("jstests/pubsub/helpers.js");' +
         'var ops = [{ op: "command", ns: "test", command: { publish: "A" } }];';
     if (messageSize == "light")
         preSync += 'ops[0]["command"]["message"] = lightMessage;';
@@ -69,7 +69,7 @@ var poll = function(_messageSize, _host, _port) {
 
     // set up preSync and postSync functions for the publish SynchronizedJob
     if(_messageSize == "light" || _messageSize == "heavy"){
-        var publishPreSync = 'load("jstests/pubsub/benchmark/helpers.js");' +
+        var publishPreSync = 'load("jstests/pubsub/helpers.js");' +
             'var ops = [{ op: "command", ns: "test", command: { publish: "A" } }];';
         if (messageSize == "light")
             publishPreSync += 'ops[0]["command"]["message"] = lightMessage;';
@@ -85,7 +85,7 @@ var poll = function(_messageSize, _host, _port) {
     }
 
     // set up preSync and postSync functions for the poll SynchronizedJobs
-    var pollPreSync = 'load("jstests/pubsub/benchmark/helpers.js");' +
+    var pollPreSync = 'load("jstests/pubsub/helpers.js");' +
                       'var ps = db.PS();' +
                       'var subA = ps.subscribe("A");' + 
                       'var ps = [{ op: "command", ns: "test", command: { poll: subA } }];';

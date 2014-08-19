@@ -88,6 +88,8 @@ namespace mongo {
         zmq::socket_t* sendSocket = NULL;
         try {
             sendSocket = new zmq::socket_t(zmqContext, isMongos() ? ZMQ_PUSH : ZMQ_PUB);
+            int hwm = 0;
+            sendSocket->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm)); 
         }
         catch (zmq::error_t& e) {
             log() << "Error initializing zmq send socket for PubSub." << causedBy(e);
@@ -103,6 +105,7 @@ namespace mongo {
         try {
             recvSocket =
                 new zmq::socket_t(zmqContext, serverGlobalParams.configsvr ? ZMQ_PULL : ZMQ_SUB);
+            // config server uses pull socket, so cannot set subscribe option
             if (!serverGlobalParams.configsvr) {
                 recvSocket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
             }
@@ -172,7 +175,7 @@ namespace mongo {
 
     PubSub::SubscriptionMap PubSub::subscriptions;
 
-    const long PubSub::maxPollInterval = 100; // milliseconds
+    const long PubSub::maxPollInterval = 1000; // milliseconds
 
     SimpleMutex PubSub::mapMutex("subsmap");
 
@@ -189,8 +192,10 @@ namespace mongo {
         zmq::socket_t* subSocket;
         try {
             subSocket = new zmq::socket_t(zmqContext, ZMQ_SUB);
-            subSocket->connect(PubSub::kIntPubSubEndpoint);
             subSocket->setsockopt(ZMQ_SUBSCRIBE, channel.c_str(), channel.length());
+            int hwm = 0;
+            subSocket->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm)); 
+            subSocket->connect(PubSub::kIntPubSubEndpoint);
         }
         catch (zmq::error_t& e) {
             uassert(18539, e.what(), false);
@@ -248,6 +253,8 @@ namespace mongo {
             // continue polling coming up for air in intervals to check if any of the
             // subscriptions have been canceled
             while (timeout > 0 && !zmq::poll(&items[0], items.size(), currPollInterval)) {
+
+                printf("no messages %s\n", jsTime().toString().c_str());
 
                 for (size_t i = 0; i < subs.size(); i++) {
                     if (subs[i].second->shouldUnsub) {

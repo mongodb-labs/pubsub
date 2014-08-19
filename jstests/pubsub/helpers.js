@@ -29,7 +29,7 @@ var average = function(array) {
 var maxClients = 20;
                                                                                                     
 // time to run each parallel thread in benchRun                                                     
-var timeSecs = 5; 
+var timeSecs = 10; 
                                                                                                     
 // used to compare number of server commands seen before and after benchRun for load stats          
 var before; var after;                                                                              
