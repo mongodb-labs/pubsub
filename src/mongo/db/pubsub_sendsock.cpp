@@ -60,11 +60,12 @@ namespace mongo {
             // workaround to compile on mongos without including d_logic.cpp
             if (!serverGlobalParams.configsvr &&
                 dbEventSocket != NULL &&
-                StringData(channel).startsWith("$events")) {
-                // only publish database events to config servers
-                dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
-                dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
-                dbEventSocket->send(&timestamp, sizeof(timestamp));
+                channel == "$events" &&
+                publishDataEvents) {
+                    // only publish database events to config servers
+                    dbEventSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
+                    dbEventSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
+                    dbEventSocket->send(&timestamp, sizeof(timestamp));
             }
 
             // publications and writes to config servers are published normally

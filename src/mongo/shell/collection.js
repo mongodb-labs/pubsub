@@ -1488,6 +1488,34 @@ DBCollection.prototype.unsetWriteConcern = function() {
     delete this._writeConcern;
 };
 
+DBCollection.prototype.watch = function(type) {
+    if (type && typeof type != 'string') {
+        throw Error('Type for collection.watch must be a string')
+    }
+
+    if (type && !(type == 'insert' || type == 'update' && type != 'remove')) {
+        throw Error('Type for collection.watch must be one of: \'insert\', \'update\', \'remove\'');
+    }
+
+    var filter = {namespace: this.toString()};
+    if (type) {
+        filter.type = type;
+    }
+
+    var ps = this._db.PS();
+    return ps.subscribe('$events', filter);
+}
+
+DBCollection.prototype.poll = function(subscriptionId, timeout) {
+    var ps = this._db.PS();
+    return ps.poll(subscriptionId, timeout);
+}
+
+DBCollection.prototype.unwatch = function(subscriptionId) {
+    var ps = this._db.PS();
+    return ps.unsubscribe(subscriptionId);
+}
+
 /**
  * PlanCache
  * Holds a reference to the collection.

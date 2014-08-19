@@ -3,32 +3,27 @@
  * using pubsub. Test to make sure that write commands on the publisher
  * are received as events on the appropriate channels on the subscriber.
  */
-var testPubSubDataEvents = function(subdb, pubdb) {
+var testPubSubDataEvents = function(subscriber, publisher) {
 
     // makeshift function overloading so this
     // method can test a single node or a pair
-    if (pubdb === undefined) {
-        pubdb = subdb;
+    if (publisher === undefined) {
+        publisher = subscriber;
     }
 
-    var subscriber = subdb.PS();
+    assert.eq(publisher.toString(), subscriber.toString(),
+              'the parameters to testPubSubDataEvents must point to the same database');
 
     // documents used for this test
     var oldDoc = {_id: 1, text: 'hello'};
     var newDoc = {_id: 1, text: 'goodbye'}
 
     // clean up collection used for this test
-    pubdb.pubsub.remove(oldDoc);
-    pubdb.pubsub.remove(newDoc);
+    publisher.pubsub.remove(oldDoc);
+    publisher.pubsub.remove(newDoc);
 
     // subscribe to all events on the publisher DB's pubsub collection
-    var channel = '$events';
-    var namespace = pubdb + ".pubsub"
-
-    // TODO: rewrite shell helpers to take a DB
-    // until this is done, shell will crash after completion of tests
-    var filter = {namespace: namespace};
-    var eventSub = subscriber.subscribe(channel, filter);
+    var eventSub = subscriber.pubsub.watch();
     var res, msg;
 
 
@@ -37,17 +32,17 @@ var testPubSubDataEvents = function(subdb, pubdb) {
     // - do an insert
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the correct document
-    assert.writeOK(pubdb.pubsub.save(oldDoc));
+    assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = subscriber.pubsub.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, channel, 1);
-    msg = res.messages[eventSub.str][channel][0];
+    assertMessageCount(res, eventSub, '$events', 1);
+    msg = res.messages[eventSub.str]['$events'][0];
     var insertDoc = {
-        namespace: namespace,
+        namespace: publisher.pubsub.toString(),
         type: "insert",
         doc: oldDoc
     };
@@ -63,17 +58,17 @@ var testPubSubDataEvents = function(subdb, pubdb) {
     //    old: <old document>,
     //    new: <new document>
     // }
-    assert.writeOK(pubdb.pubsub.save(newDoc));
+    assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = subscriber.pubsub.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, channel, 1);
-    var msg = res.messages[eventSub.str][channel][0];
+    assertMessageCount(res, eventSub, '$events', 1);
+    var msg = res.messages[eventSub.str]['$events'][0];
     var updateDoc = {
-        namespace: namespace,
+        namespace: publisher.pubsub.toString(),
         type: "update",
         doc: {
             old: oldDoc,
@@ -88,17 +83,17 @@ var testPubSubDataEvents = function(subdb, pubdb) {
     // - do a remove
     // - assert that the subscriber received a single event of the correct type
     // - ensure that the response body had the deleted document
-    assert.writeOK(pubdb.pubsub.remove(newDoc));
+    assert.writeOK(publisher.pubsub.remove(newDoc));
 
     assert.soon(function() {
-        res = subscriber.poll(eventSub);
+        res = subscriber.pubsub.poll(eventSub);
         return res.messages[eventSub.str] !== undefined;
     });
 
-    assertMessageCount(res, eventSub, channel, 1);
-    msg = res.messages[eventSub.str][channel][0];
+    assertMessageCount(res, eventSub, '$events', 1);
+    msg = res.messages[eventSub.str]['$events'][0];
     var removeDoc = {
-        namespace: namespace,
+        namespace: publisher.pubsub.toString(),
         type: "remove",
         doc: newDoc
     };
@@ -106,7 +101,7 @@ var testPubSubDataEvents = function(subdb, pubdb) {
 
 
     // clean up subscription
-    subscriber.unsubscribe(eventSub);
+    subscriber.pubsub.unwatch(eventSub);
 }
 
 var assertMessageCount = function(res, subscriptionId, channel, count) {
