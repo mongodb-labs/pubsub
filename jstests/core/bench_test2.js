@@ -31,7 +31,7 @@ max = 0;
 t.find().forEach(
     function(z){
         sum += z.x;
-        sumsq += Math.pow( ( res.averageUpdatesPerSecond / 100 ) - z.x , 2 );
+        sumsq += Math.pow( ( (res.averageUpdatesPerSecond/1000000) / 100 ) - z.x , 2 );
         min = Math.min( z.x , min );
         max = Math.max( z.x , max );
     }

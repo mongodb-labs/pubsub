@@ -21,7 +21,7 @@ if (jsTest.options().auth) {
 }
 res = benchRun( benchArgs );
 
-assert.lte( seconds * res.averageUpdatesPerSecond , t.findOne( { _id : 1 } ).x * 1.05 , "A1" )
+assert.lte( seconds * res.averageUpdatesPerSecond/1000000 , t.findOne( { _id : 1 } ).x * 1.05 , "A1" )
 
 
 assert.eq( 1 , t.getIndexes().length , "B1" )
