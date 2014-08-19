@@ -1449,14 +1449,4 @@ DB.prototype.watch = function(type) {
     return ps.subscribe('$events', filter);
 }
 
-DB.prototype.poll = function(subscriptionId, timeout) {
-    var ps = this.PS();
-    return ps.poll(subscriptionId, timeout);
-}
-
-DB.prototype.unwatch = function(subscriptionId) {
-    var ps = this.PS();
-    return ps.unsubscribe(subscriptionId);
-}
-
 }());

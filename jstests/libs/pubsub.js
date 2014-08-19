@@ -21,7 +21,8 @@ var codes = {
 
 // NOTE: this function is specific to the messages used in this test
 // It is not a generic deep-compare of two javascript objects
-var gotMessage = function(res, subscriptionId, channel, msg) {
+var gotMessage = function(res, subscription, channel, msg) {
+    var subscriptionId = subscription.getId();
     if (res.messages[subscriptionId.str] === undefined)
         return false;
     var stream = res.messages[subscriptionId.str][channel];
@@ -32,11 +33,13 @@ var gotMessage = function(res, subscriptionId, channel, msg) {
     return false;
 }
 
-var gotNoMessage = function(res, subscriptionId) {
+var gotNoMessage = function(res, subscription) {
+    var subscriptionId = subscription.getId();
     return res.messages[subscriptionId.str] === undefined;
 }
 
-var onlyGotMessage = function(res, subscriptionId, channel, msg) {
+var onlyGotMessage = function(res, subscription, channel, msg) {
+    var subscriptionId = subscription.getId();
     if (res.messages[subscriptionId.str] === undefined)
         return false;
     var stream = res.messages[subscriptionId.str][channel];
@@ -44,7 +47,7 @@ var onlyGotMessage = function(res, subscriptionId, channel, msg) {
         if (!friendlyEqual(stream[i], msg))
             return false;
     }
-    return gotMessage(res, subscriptionId, channel, msg);
+    return gotMessage(res, subscription, channel, msg);
 }
 
 var msg1 = {a:1};
@@ -93,14 +96,14 @@ var selfWorks = function(db) {
     // node A subscribes to 'A' and polls BEFORE publications on A
     // should get no messages
     var subA = ps.subscribe('A');
-    res = ps.poll(subA);
+    res = subA.poll();
     assert(gotNoMessage(res, subA));
 
     // node A subscribes to 'A' and polls AFTER publications on A
     // should get one message on 'A'
     assert.commandWorked(ps.publish('A', msg1));
     assert.soon(function() {
-        res = ps.poll(subA);
+        res = subA.poll();
         return gotMessage(res, subA, 'A', msg1);
     });
 
@@ -109,7 +112,7 @@ var selfWorks = function(db) {
     assert.commandWorked(ps.publish('A', msg2));
     gotFirst = false;
     assert.soon(function() {
-        res = ps.poll(subA);
+        res = subA.poll();
         if (gotMessage(res, subA, 'A', msg1)) gotFirst = true;
         return gotFirst && gotMessage(res, subA, 'A', msg2);
     });
@@ -117,11 +120,11 @@ var selfWorks = function(db) {
     // node B subscribes to 'B' and polls AFTER publications on *A* (not B)
     // should get no messages
     var subB = ps.subscribe('B');
-    res = ps.poll(subB);
+    res = subB.poll();
     assert(gotNoMessage(res, subB));
 
     // poll message from A to remove it
-    ps.poll(subA);
+    subA.poll();
 
     // after publications on 'A' and 'B',
     // A only gets messages on 'A'
@@ -129,17 +132,17 @@ var selfWorks = function(db) {
     assert.commandWorked(ps.publish('A', msg1));
     assert.commandWorked(ps.publish('B', msg2));
     assert.soon(function() {
-        res = ps.poll(subA);
+        res = subA.poll();
         return onlyGotMessage(res, subA, 'A', msg1);
     });
     assert.soon(function() {
-        res = ps.poll(subB);
+        res = subB.poll();
         return onlyGotMessage(res, subB, 'B', msg2);
     });
 
     // nodes should be able to unsubscribe successfully
-    assert.commandWorked(ps.unsubscribe(subA));
-    assert.commandWorked(ps.unsubscribe(subB));
+    assert.commandWorked(subA.unsubscribe());
+    assert.commandWorked(subB.unsubscribe());
 
 
     /***** LONG RUNNING COMMANDS *****/
@@ -147,7 +150,7 @@ var selfWorks = function(db) {
     // start a parallel shell to issue a long running poll
     // poll should fail with message 'Poll interrupted by unsubscribe.'
     var subC = ps.subscribe('C');
-    var shell1 = startParallelShell('db.runCommand({ poll: ObjectId(\'' + subC + '\'), ' +
+    var shell1 = startParallelShell('db.runCommand({ poll: ObjectId(\'' + subC.getId() + '\'), ' +
                                                     'timeout: 10000 });',
                                     db.getMongo().port);
 
@@ -156,14 +159,14 @@ var selfWorks = function(db) {
 
     // a node cannot poll against an active poll
     assert.soon(function() {
-        var res = ps.poll(subC);
-        return res.errors !== undefined && res.errors[subC.str] === codes.kPollActive;
+        var res = subC.poll();
+        return res.errors !== undefined && res.errors[subC.getId().str] === codes.kPollActive;
     });
 
     // a node is able issue unsubscribe to interrupt a poll
-    ps.unsubscribe(subC);
+    subC.unsubscribe();
     assert.soon(function() {
-        return ps.poll(subC).errors[subC.str] === codes.kInvalidSubscriptionId;
+        return subC.poll().errors[subC.getId().str] === codes.kInvalidSubscriptionId;
     });
 
     // wait for parallel shell to terminate
@@ -180,7 +183,8 @@ var selfWorks = function(db) {
     sleep(500);
 
     assert.soon(function() {
-        return qdb.runCommand({ poll: subF }).errors[subF.str] === codes.kInvalidSubscriptionId;
+        return qdb.runCommand({ poll: subF }).errors[subF.str] ===
+               codes.kInvalidSubscriptionId;
     });
 
     // poll that does not receive any messages for a long time returns pollAgain
@@ -199,7 +203,7 @@ var selfWorks = function(db) {
     var subH = ps.subscribe('H');
     var subI = ps.subscribe('I');
     var subJ = ps.subscribe('J');
-    var arr = [subH, subI, subJ];
+    var arr = [subH.getId(), subI.getId(), subJ.getId()];
 
     // no messages received on any channel yet - poll as array
     res = ps.poll(arr);
@@ -226,22 +230,22 @@ var selfWorks = function(db) {
     /******* ERROR CASES ******/
 
     // cannot poll without subscribing
-    var invalidId = new ObjectId();
-    assert.eq(ps.poll(invalidId).errors[invalidId.str], codes.kInvalidSubscriptionId);
+    var invalidSub = new Subscription(new ObjectId(), ps);
+    assert.eq(invalidSub.poll().errors[invalidSub.getId().str], codes.kInvalidSubscriptionId);
 
     // cannot poll on an old subscription
     var subD = ps.subscribe('D');
-    ps.unsubscribe(subD);
-    assert.eq(ps.poll(subD).errors[subD.str], codes.kInvalidSubscriptionId);
+    subD.unsubscribe();
+    assert.eq(subD.poll().errors[subD.getId().str], codes.kInvalidSubscriptionId);
 
     // cannot unsubscribe without subscribing
-    invalidId = new ObjectId();
-    assert.eq(ps.unsubscribe(invalidId).errors[invalidId.str], codes.kInvalidSubscriptionId);
+    invalidSub = new Subscription(new ObjectId(), ps);
+    assert.eq(invalidSub.unsubscribe().errors[invalidSub.getId().str], codes.kInvalidSubscriptionId);
 
     // cannot unsubscribe from old subscription
     var subD = ps.subscribe('D');
-    ps.unsubscribe(subD);
-    assert.eq(ps.poll(subD).errors[subD.str], codes.kInvalidSubscriptionId);
+    subD.unsubscribe();
+    assert.eq(subD.poll().errors[subD.getId().str], codes.kInvalidSubscriptionId);
 
     return true;
 }
@@ -258,14 +262,14 @@ var pairWorks = function(db1, db2) {
         // node A subscribes to 'A' and polls BEFORE publications on A
         // should get no messages
         var subA = subscriber.subscribe('A');
-        res = subscriber.poll(subA);
+        res = subA.poll();
         return gotNoMessage(res, subA);
 
         // node A subscribes to 'A' and polls AFTER publications on A
         // should get one message on 'A'
         assert.commandWorked(publisher.publish('A', msg1));
         assert.soon(function() {
-            res = subscriber.poll(subA);
+            res = subA.poll();
             return onlyGotMessage(res, subA, 'A', msg1);
         });
 
@@ -275,7 +279,7 @@ var pairWorks = function(db1, db2) {
 
         var gotFirst = false;
         assert.soon(function() {
-            res = subscriber.poll(subA);
+            res = subA.poll();
             if (gotMessage(res, subA, 'A', msg1)) gotFirst = true;
             return gotFirst && gotMessage(res, subA, 'A', msg2);
         });
@@ -285,18 +289,18 @@ var pairWorks = function(db1, db2) {
         var subB = subscriber.subscribe('B');
         assert.commandWorked(publisher.publish('A', { text: 'hello' }));
 
-        res = subscriber.poll(subB);
+        res = subB.poll();
         assert(gotNoMessage(res, subB));
 
         // poll message from A to remove it
         // TODO: need to wrap this in an assert.soon?
-        subscriber.poll(subA);
+        subA.poll();
 
         // node B subscribes to 'B' and polls after publications on B
         // should only get messages on B
         assert.commandWorked(publisher.publish('B', msg2));
         assert.soon(function() {
-            res = subscriber.poll(subB);
+            res = subB.poll();
             return onlyGotMessage(res, subB, 'B', msg2);
         });
 
@@ -306,17 +310,17 @@ var pairWorks = function(db1, db2) {
         assert.commandWorked(publisher.publish('A', msg1));
         assert.commandWorked(publisher.publish('B', msg2));
         assert.soon(function() {
-            res = subscriber.poll(subB);
+            res = subB.poll();
             return onlyGotMessage(res, subB, 'B', msg2);
         });
         assert.soon(function() {
-            res = subscriber.poll(subA);
+            res = subA.poll();
             return onlyGotMessage(res, subA, 'A', msg1);
         });
 
         // nodes should be able to unsubscribe successfully
-        assert.commandWorked(subscriber.unsubscribe(subA));
-        assert.commandWorked(subscriber.unsubscribe(subB));
+        assert.commandWorked(subA.unsubscribe());
+        assert.commandWorked(subB.unsubscribe());
 
         return true;
     }

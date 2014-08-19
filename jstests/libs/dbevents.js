@@ -35,12 +35,12 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assert.writeOK(publisher.pubsub.save(oldDoc));
 
     assert.soon(function() {
-        res = subscriber.pubsub.poll(eventSub);
-        return res.messages[eventSub.str] !== undefined;
+        res = eventSub.poll();
+        return res.messages[eventSub.getId().str] !== undefined;
     });
 
     assertMessageCount(res, eventSub, '$events', 1);
-    msg = res.messages[eventSub.str]['$events'][0];
+    msg = res.messages[eventSub.getId().str]['$events'][0];
     var insertDoc = {
         db: publisher.getName(),
         collection: publisher.pubsub.getName(),
@@ -62,12 +62,12 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assert.writeOK(publisher.pubsub.save(newDoc));
 
     assert.soon(function() {
-        res = subscriber.pubsub.poll(eventSub);
-        return res.messages[eventSub.str] !== undefined;
+        res = eventSub.poll();
+        return res.messages[eventSub.getId().str] !== undefined;
     });
 
     assertMessageCount(res, eventSub, '$events', 1);
-    var msg = res.messages[eventSub.str]['$events'][0];
+    var msg = res.messages[eventSub.getId().str]['$events'][0];
     var updateDoc = {
         db: publisher.getName(),
         collection: publisher.pubsub.getName(),
@@ -88,12 +88,12 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assert.writeOK(publisher.pubsub.remove(newDoc));
 
     assert.soon(function() {
-        res = subscriber.pubsub.poll(eventSub);
-        return res.messages[eventSub.str] !== undefined;
+        res = eventSub.poll();
+        return res.messages[eventSub.getId().str] !== undefined;
     });
 
     assertMessageCount(res, eventSub, '$events', 1);
-    msg = res.messages[eventSub.str]['$events'][0];
+    msg = res.messages[eventSub.getId().str]['$events'][0];
     var removeDoc = {
         db: publisher.getName(),
         collection: publisher.pubsub.getName(),
@@ -104,10 +104,11 @@ var testPubSubDataEvents = function(subscriber, publisher) {
 
 
     // clean up subscription
-    subscriber.pubsub.unwatch(eventSub);
+    eventSub.unsubscribe();
 }
 
-var assertMessageCount = function(res, subscriptionId, channel, count) {
+var assertMessageCount = function(res, subscription, channel, count) {
+    var subscriptionId = subscription.getId();
     var channelMessages = res.messages[subscriptionId.str][channel];
     assert.neq(channelMessages, undefined);
     assert.eq(channelMessages.length, count);

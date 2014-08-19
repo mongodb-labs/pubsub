@@ -15,15 +15,15 @@ for(var i=0; i<6; i++){
 }
 
 // poll on subscriptions as array
-var arr = [subRegular, subProjection];
+var arr = [subRegular.getId(), subProjection.getId()];
 var res = ps.poll(arr);
 
 // verify correct messages received
-var resRegular = res["messages"][subRegular.str]["A"];
+var resRegular = res["messages"][subRegular.getId().str]["A"];
 for(var i=0; i<6; i++)
     assert.eq(resRegular[i]["count"], i);
 
-var resProjection = res["messages"][subProjection.str]["A"];
+var resProjection = res["messages"][subProjection.getId().str]["A"];
 for(var i=0; i<6; i++){
     assert.eq(resProjection[i]["count"], i);
     assert.eq(resProjection[i]["body"], undefined);

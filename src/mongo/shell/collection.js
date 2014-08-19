@@ -1506,16 +1506,6 @@ DBCollection.prototype.watch = function(type) {
     return ps.subscribe('$events', filter);
 }
 
-DBCollection.prototype.poll = function(subscriptionId, timeout) {
-    var ps = this._db.PS();
-    return ps.poll(subscriptionId, timeout);
-}
-
-DBCollection.prototype.unwatch = function(subscriptionId) {
-    var ps = this._db.PS();
-    return ps.unsubscribe(subscriptionId);
-}
-
 /**
  * PlanCache
  * Holds a reference to the collection.

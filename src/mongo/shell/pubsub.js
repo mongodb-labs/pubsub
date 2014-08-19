@@ -1,4 +1,4 @@
-var PS;
+var PS, Subscription;
 
 (function() {
 
@@ -61,9 +61,9 @@ PS.prototype.subscribe = function(channel, filter, projection) {
         cmdObj.projection = projection;
     var res = this._db.runCommand(cmdObj) ;
     assert.commandWorked(res)
-    var subscriptionId = res.subscriptionId;
-    this._allSubscriptions.push(subscriptionId);
-    return subscriptionId;
+    var subscription = new Subscription(res.subscriptionId, this);
+    this._allSubscriptions.push(subscription);
+    return subscription;
 }
 
 PS.prototype.poll = function(id, timeout) {
@@ -107,6 +107,35 @@ PS.prototype.unsubscribeAll = function() {
     assert.commandWorked(res);
     this._allSubscriptions = [];
     return res
+}
+
+if (Subscription === undefined) {
+    Subscription = function(id, ps) {
+        if (id === undefined) {
+            throw Error("The Subscription constructor takes an id");
+        }
+        this._id = id;
+        this._ps = ps;
+    }
+}
+
+Subscription.prototype.poll = function() {
+    return this._ps.poll(this._id);
+}
+
+Subscription.prototype.getId = function() {
+    return this._id;
+}
+
+Subscription.prototype.forEach = function(callback) {
+    while (true) {
+        var res = this.poll();
+        callback(res);
+    }
+}
+
+Subscription.prototype.unsubscribe = function() {
+    return this._ps.unsubscribe(this._id);
 }
 
 }());

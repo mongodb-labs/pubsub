@@ -15,14 +15,14 @@ for(var i=0; i<6; i++){
 }
 
 // poll on all subscriptions as array
-var arr = [subRegular, subFilter];
+var arr = [subRegular.getId(), subFilter.getId()];
 var res = ps.poll(arr);
 
 // verify correct messages received
-var resRegular = res["messages"][subRegular.str]["A"];
+var resRegular = res["messages"][subRegular.getId().str]["A"];
 for(var i=0; i<6; i++)
     assert.eq(resRegular[i]["count"], i);
 
-var resFilter = res["messages"][subFilter.str]["A"];
+var resFilter = res["messages"][subFilter.getId().str]["A"];
 for(var i=0; i<2; i++)
     assert.eq(resFilter[i]["count"], i+4);
