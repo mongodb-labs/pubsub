@@ -1431,13 +1431,14 @@ DB.prototype.PS = function() {
     return new PS(this);
 }
 
-DB.prototype.watch = function(type) {
+DB.prototype.subscribeToChanges = function(type) {
     if (type && typeof type != 'string') {
-        throw Error('Type for db.watch must be a string')
+        throw Error('Type for db.subscribeToChanges must be a string')
     }
 
     if (type && !(type == 'insert' || type == 'update' && type != 'remove')) {
-        throw Error('Type for db.watch must be one of: \'insert\', \'update\', \'remove\'');
+        throw Error('Type for db.subscribeToChanges must be one of: ' + 
+                    '\'insert\', \'update\', \'remove\'');
     }
 
     var filter = {db: this.getName()};

@@ -8,7 +8,7 @@ db.adminCommand({setParameter: 1, publishDataEvents: true});
 testPubSubDataEvents(db);
 
 // subscribe to data events before disabling them
-var eventSub = db.pubsub.watch();
+var eventSub = db.pubsub.subscribeToChanges();
 
 // disable data events
 db.adminCommand({setParameter: 1, publishDataEvents: false});

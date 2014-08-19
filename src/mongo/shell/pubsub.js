@@ -78,18 +78,6 @@ PS.prototype.poll = function(id, timeout) {
     return res;
 }
 
-PS.prototype.pollAll = function(timeout) {
-    timeoutType = typeof timeout;
-    if (timeoutType != "undefined" && timeoutType != "number")
-        throw Error("The timeout argument to the poll command must be a " +
-                    "number but was a " + timeoutType);
-    var dbCommand = { poll: this._allSubscriptions };
-    if (timeout) dbCommand.timeout = timeout;
-    var res = this._db.runCommand(dbCommand);
-    assert.commandWorked(res);
-    return res;
-}
-
 PS.prototype.unsubscribe = function(id) {
     idType = typeof id;
     if (idType != "object" && idType != "array")
@@ -102,13 +90,6 @@ PS.prototype.unsubscribe = function(id) {
     return res;
 }
 
-PS.prototype.unsubscribeAll = function() {
-    var res = this._db.runCommand({ unsubscribe: this._allSubscriptions });
-    assert.commandWorked(res);
-    this._allSubscriptions = [];
-    return res
-}
-
 if (Subscription === undefined) {
     Subscription = function(id, ps) {
         if (id === undefined) {
@@ -119,8 +100,8 @@ if (Subscription === undefined) {
     }
 }
 
-Subscription.prototype.poll = function() {
-    return this._ps.poll(this._id);
+Subscription.prototype.poll = function(timeout) {
+    return this._ps.poll(this._id, timeout);
 }
 
 Subscription.prototype.getId = function() {
@@ -129,7 +110,7 @@ Subscription.prototype.getId = function() {
 
 Subscription.prototype.forEach = function(callback) {
     while (true) {
-        var res = this.poll();
+        var res = this.poll(1000); // 1 second timeout by default
         callback(res);
     }
 }

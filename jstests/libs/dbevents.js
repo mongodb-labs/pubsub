@@ -23,7 +23,7 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     publisher.pubsub.remove(newDoc);
 
     // subscribe to all events on the publisher DB's pubsub collection
-    var eventSub = subscriber.pubsub.watch();
+    var eventSub = subscriber.pubsub.subscribeToChanges();
     var res, msg;
 
 

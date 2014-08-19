@@ -1488,13 +1488,14 @@ DBCollection.prototype.unsetWriteConcern = function() {
     delete this._writeConcern;
 };
 
-DBCollection.prototype.watch = function(type) {
+DBCollection.prototype.subscribeToChanges = function(type) {
     if (type && typeof type != 'string') {
-        throw Error('Type for collection.watch must be a string')
+        throw Error('Type for collection.subscribeToChanges must be a string')
     }
 
     if (type && !(type == 'insert' || type == 'update' && type != 'remove')) {
-        throw Error('Type for collection.watch must be one of: \'insert\', \'update\', \'remove\'');
+        throw Error('Type for collection.subscribeToChanges must be one of: ' + 
+                    '\'insert\', \'update\', \'remove\'');
     }
 
     var filter = {db: this.getDB().getName(), collection: this.getName()};
