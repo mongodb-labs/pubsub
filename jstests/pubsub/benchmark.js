@@ -57,15 +57,8 @@ var publish = function(_messageSize, _addrs) {
  */
 var poll = function(_messageSize, _host, _port) {
 
-    var host;
-    if (typeof _host == "object" && _host.length > 0)
-        host = _host;
-    else if (typeof _host == "string" && _host.length > 0)
-        host = _host
-    else
-    host = "localhost";
-
-    var port = _port || 27017;
+    var addrs = parseAddresses(_addrs);
+    var messageSize = messageSize || "light";
 
     // set up preSync and postSync functions for the publish SynchronizedJob
     if(_messageSize == "light" || _messageSize == "heavy"){
@@ -96,10 +89,16 @@ var poll = function(_messageSize, _host, _port) {
     for (var numParallel = 1; numParallel <= maxClients; numParallel++) {
         var runner = new SynchronizedRunner();
 
-        for (var i=0; i<numParallel; i++)
-            runner.addJob(new SynchronizedJob(host[host.length%i], port, preSync, postSync));
-        if (publishPreSync)
-            runner.addJob(new SynchronizedJob(host, port, publishPreSync, publishPostSync));
+        for (var i=1; i<=numParallel; i++) {
+            // round robin the jobs across the hosts
+            var addr = addrs[i%addrs.length];
+            runner.addJob(new SynchronizedJob(addr.host, addr.port, preSync, postSync));
+        }
+
+        if (publishPreSync) {
+            var addr = addrs[0];
+            runner.addJob(new SynchronizedJob(addr.host, addr.port, publishPreSync, publishPostSync));
+        }
 
         runner.start();
         stats["server"]["" + numParallel] = sum(runner.returnVals);
