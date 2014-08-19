@@ -1497,7 +1497,7 @@ DBCollection.prototype.watch = function(type) {
         throw Error('Type for collection.watch must be one of: \'insert\', \'update\', \'remove\'');
     }
 
-    var filter = {namespace: this.toString()};
+    var filter = {db: this.getDB().getName(), collection: this.getName()};
     if (type) {
         filter.type = type;
     }

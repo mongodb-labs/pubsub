@@ -38,8 +38,9 @@
 
 namespace mongo {
 
-    // Server Parameters for enabling pubsub and DB event notifications
-    MONGO_EXPORT_SERVER_PARAMETER(pubsubEnabled, bool, true);
+    // Server Parameters for enabling pubsub and DB event notifications.
+    // TODO: enable turning pubsub on/off at runtime
+    bool pubsubEnabled = true;
     MONGO_EXPORT_SERVER_PARAMETER(publishDataEvents, bool, false);
 
     SimpleMutex PubSubSendSocket::sendMutex("zmqsend");
@@ -50,6 +51,7 @@ namespace mongo {
     std::map<HostAndPort, bool> PubSubSendSocket::rsMembers;
 
     bool PubSubSendSocket::publish(const std::string& channel, const BSONObj& message) {
+        uassert(18560, "PubSub should be enabled on all calls to publish!", pubsubEnabled);
 
         unsigned long long timestamp = curTimeMicros64();
         try {
@@ -72,9 +74,6 @@ namespace mongo {
             extSendSocket->send(channel.c_str(), channel.size() + 1, ZMQ_SNDMORE);
             extSendSocket->send(message.objdata(), message.objsize(), ZMQ_SNDMORE);
             extSendSocket->send(&timestamp, sizeof(timestamp));
-            if (channel.find("endSignal") != std::string::npos) {
-                printf("channel: %s, time: %s\n", channel.c_str(), jsTime().toString().c_str());
-            }
         }
         catch (zmq::error_t& e) {
             // can't uassert here - this method is used for database events.

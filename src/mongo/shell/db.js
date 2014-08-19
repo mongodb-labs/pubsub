@@ -1440,7 +1440,7 @@ DB.prototype.watch = function(type) {
         throw Error('Type for db.watch must be one of: \'insert\', \'update\', \'remove\'');
     }
 
-    var filter = {namespace: this.toString()};
+    var filter = {db: this.getName()};
     if (type) {
         filter.type = type;
     }

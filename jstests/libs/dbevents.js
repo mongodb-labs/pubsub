@@ -11,7 +11,7 @@ var testPubSubDataEvents = function(subscriber, publisher) {
         publisher = subscriber;
     }
 
-    assert.eq(publisher.toString(), subscriber.toString(),
+    assert.eq(publisher.getName(), subscriber.getName(),
               'the parameters to testPubSubDataEvents must point to the same database');
 
     // documents used for this test
@@ -42,7 +42,8 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assertMessageCount(res, eventSub, '$events', 1);
     msg = res.messages[eventSub.str]['$events'][0];
     var insertDoc = {
-        namespace: publisher.pubsub.toString(),
+        db: publisher.getName(),
+        collection: publisher.pubsub.getName(),
         type: "insert",
         doc: oldDoc
     };
@@ -68,7 +69,8 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assertMessageCount(res, eventSub, '$events', 1);
     var msg = res.messages[eventSub.str]['$events'][0];
     var updateDoc = {
-        namespace: publisher.pubsub.toString(),
+        db: publisher.getName(),
+        collection: publisher.pubsub.getName(),
         type: "update",
         doc: {
             old: oldDoc,
@@ -93,7 +95,8 @@ var testPubSubDataEvents = function(subscriber, publisher) {
     assertMessageCount(res, eventSub, '$events', 1);
     msg = res.messages[eventSub.str]['$events'][0];
     var removeDoc = {
-        namespace: publisher.pubsub.toString(),
+        db: publisher.getName(),
+        collection: publisher.pubsub.getName(),
         type: "remove",
         doc: newDoc
     };

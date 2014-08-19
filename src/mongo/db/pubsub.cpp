@@ -253,9 +253,6 @@ namespace mongo {
             // continue polling coming up for air in intervals to check if any of the
             // subscriptions have been canceled
             while (timeout > 0 && !zmq::poll(&items[0], items.size(), currPollInterval)) {
-
-                printf("no messages %s\n", jsTime().toString().c_str());
-
                 for (size_t i = 0; i < subs.size(); i++) {
                     if (subs[i].second->shouldUnsub) {
                         SubscriptionId subscriptionId = subs[i].first;

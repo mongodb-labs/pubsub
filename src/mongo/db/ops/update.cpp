@@ -793,7 +793,8 @@ namespace mongo {
 
             if (pubsubEnabled && publishDataEvents) {
                 BSONObj updateObject = BSON("old" << oldObjOwned << "new" << newObj);
-                BSONObj publishObject = BSON("namespace" << nsString.ns() <<
+                BSONObj publishObject = BSON("db" << nsString.db() <<
+                                             "collection" << nsString.coll() <<
                                              "type" << "update" <<
                                              "doc" << updateObject);
                 bool success = PubSubSendSocket::publish("$events", publishObject);

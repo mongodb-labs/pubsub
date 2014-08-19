@@ -192,7 +192,8 @@ namespace mongo {
             _details->paddingFits();
 
             if (pubsubEnabled && publishDataEvents) {
-                BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+                BSONObj publishObject = BSON("db" << _ns.db() <<
+                                             "collection" << _ns.coll() <<
                                              "type" << "insert" <<
                                              "doc" << docToInsert);
                 bool success = PubSubSendSocket::publish("$events", publishObject);
@@ -222,7 +223,8 @@ namespace mongo {
             return StatusWith<DiskLoc>( status );
 
         if (pubsubEnabled && publishDataEvents) {
-            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+            BSONObj publishObject = BSON("db" << _ns.db() <<
+                                         "collection" << _ns.coll() <<
                                          "type" << "insert" <<
                                          "doc" << doc);
             bool success = PubSubSendSocket::publish("$events", publishObject);
@@ -285,7 +287,8 @@ namespace mongo {
         BSONObj doc = docFor( loc );
 
         if (pubsubEnabled && publishDataEvents) {
-            BSONObj publishObject = BSON("namespace" << _ns.ns() <<
+            BSONObj publishObject = BSON("db" << _ns.db() <<
+                                         "collection" << _ns.coll() <<
                                          "type" << "remove" <<
                                          "doc" << doc);
             bool success = PubSubSendSocket::publish("$events", publishObject);

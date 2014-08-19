@@ -15,7 +15,7 @@ db.adminCommand({setParameter: 1, publishDataEvents: false});
 
 // ensure that subscriptions to data events fail. use db.runCommand here
 // to bypass shell-level checks
-var filter = {namespace: db.pubsub.toString()};
+var filter = {db: db.getName(), collection: db.pubsub.getName()};
 assert.commandFailedWithCode(db.runCommand({subscribe: '$events', filter: filter}),
                              kDBEventsDisabled);
 
