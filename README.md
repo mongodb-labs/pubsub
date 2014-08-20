@@ -1,29 +1,31 @@
-#MongoDB + Pub/Sub
+MongoDB + Pub/Sub
+=================
 
 Welcome to [MongoDB](https://github.com/mongodb/mongo)! This is an implementation of publish/subscribe on top of MongoDB v2.6.3 using [ZeroMQ](http://zeromq.org). A MongoDB summer 2014 intern project by [Alex Grover](https://github.com/ajgrover) and [Esha Maharishi](https://github.com/EshaMaharishi).
 
 Note: this is a prototype and is _not_ production ready.
 
-##Building
+# Building
 
 See docs/building.md or navigate to www.mongodb.org and search for "Building".
 
-##Drivers
+# Drivers
 
 An example node.js driver is available [here](https://github.com/ajgrover/node-mongodb-pubsub). This driver provides access to all the additional functionality implemented here.
 
-##Design
+# Design
 
 - why ZeroMQ?
 - design considerations
 - where we are today
 
-##Features
+# Features
 
+- regular pubsub
 - filters/projections
 - database event notifications
 
-##API Documentation
+# API Documentation
 
 In addition to MongoDB's basic behavior, we implemented 4 additional database commands: `publish`, `subscribe`, `poll`, and `unsubscribe`.
 
@@ -39,9 +41,7 @@ These are accessible from the Mongo shell through the `ps` variable.
 
 The server API for for each of these commands is as follows:
 
-The API
-
-###Publish
+## Publish
 
 Signature:
 
@@ -64,7 +64,7 @@ Other:
 
 - The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
 
-###Subscribe
+## Subscribe
 
 ```
 { subscribe : <channel>, filter : <filter>, projection: <projection> }
@@ -84,21 +84,21 @@ Arguments:
 
 Filters and projections in pubsub have the same syntax as the query and projection fields of a read command. See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for documentation on filter syntax and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
 
-####Subscriptions
+### Subscriptions
 
 - document subscription object methods
 - document shell helper
 
-####Database Events
+### Database Events
 
 - document channels and behavior, setParameter
 
-###Poll
+## Poll
 
 - document signature and behavior, errors
 - document shell helper
 
-###Unsubscribe
+## Unsubscribe
 
 Signature:
 
@@ -123,15 +123,15 @@ Errors:
 - In the event that an array is passed and not all array members are ObjectIds, the command will fail and no subscriptions will be unsubscribed.
 - In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
-### Database Events
+## Database Events
 
 - document shell helper
 
-##Performance
+# Performance
 
 - include graphs and numbers here
 
-##TODO
+# TODO
 
 - Use secure connections for internally propagating messages over ZMQ (Curve or SSL)
 - Allow for exact matching channels rather than just ZMQ’s prefix matching
@@ -140,7 +140,7 @@ Errors:
 - Only propagate messages internally to nodes who are subscribed
 - Allow enable/disable of pubsub at runtime
 
-##License
+# License
 Most MongoDB source files (src/mongo folder and below) are made available under the terms of the GNU Affero General Public License (AGPL).  See individual files for details.
 
 As an exception, the files in the client/, debian/, rpm/, utils/mongoutils, and all subdirectories thereof are made available under the terms of the Apache License, version 2.0.
