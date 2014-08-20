@@ -27,21 +27,62 @@ An example node.js driver is available [here](https://github.com/ajgrover/node-m
 
 In addition to MongoDB's basic behavior, we implemented 4 additional database commands: `publish`, `subscribe`, `poll`, and `unsubscribe`.
 
+These are accessible from the Mongo shell through the `ps` variable.
+
+```javascript
+> var ps = db.PS()
+> var subscription = ps.subscribe(channel, [filter], [projection]) // returns a Subscription object
+> ps.publish(channel, message)
+> subscription.poll([timeout]) // returns message
+> subscription.unsubscribe()
+```
+
+The server API for for each of these commands is as follows:
+
+The API
+
 ###Publish
 
-- document signature and behavior, errors
+Signature:
+
+```
+{ publish : <channel>, message : <message> }
+```
+
+From the Mongo shell:
+
+```
+ps.publish(channel, message)
+```
+
+Arguments:
+
+- `channel` Required. Must be a string.
+- `message` Required. Must be a document.
+
+Other:
+
+- The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
 
 ###Subscribe
 
 - document signature and behavior, errors, filters and projections
+- document shell helper
+
+####Subscriptions
+
+- document subscription object methods
+- document shell helper
 
 ####Database Events
 
 - document channels and behavior, setParameter
+- document shell helper
 
 ###Unsubscribe
 
 - document signature and behavior, errors
+- document shell helper
 
 ##Performance
 
