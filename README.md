@@ -92,11 +92,39 @@ Filters and projections in pubsub have the same syntax as the query and projecti
 ####Database Events
 
 - document channels and behavior, setParameter
+
+###Poll
+
+- document signature and behavior, errors
 - document shell helper
 
 ###Unsubscribe
 
-- document signature and behavior, errors
+Signature:
+
+```
+{ unsubscribe : <subscriptionId(s)> }
+```
+
+From the Mongo shell:
+
+```
+subscription.unsubscribe()
+ps.unsubscribe(subscription.getId())
+ps.unsubscribe([subscription IDs])
+```
+
+Arguments:
+
+- `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+
+Errors:
+
+- In the event that an array is passed and not all array members are ObjectIds, the command will fail and no subscriptions will be unsubscribed.
+- In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
+
+### Database Events
+
 - document shell helper
 
 ##Performance
