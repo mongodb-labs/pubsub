@@ -58,7 +58,7 @@ ps.publish(channel, message)
 Arguments:
 
 - `channel` Required. Must be a string.
-- `message` Required. Must be a document.
+- `message` Required. Must be an object.
 
 Other:
 
@@ -66,8 +66,23 @@ Other:
 
 ###Subscribe
 
-- document signature and behavior, errors, filters and projections
-- document shell helper
+```
+{ subscribe : <channel>, filter : <filter>, projection: <projection> }
+```
+
+From the Mongo shell:
+
+```
+ps.subscribe(channel, [filter], [projection]) // returns a Subscription
+```
+
+Arguments:
+
+- `channel` Required. Must be a string.
+- `filter` Optional. Must be an object. Specifies a filter to apply to incoming messages.
+- `projection` Optional. Must be an object. Specifies fields of incoming messages to return.
+
+Filters and projections in pubsub have the same syntax as the query and projection fields of a read command. See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for documentation on filter syntax and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
 
 ####Subscriptions
 
