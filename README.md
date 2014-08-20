@@ -78,7 +78,7 @@ ps.subscribe(channel, [filter], [projection]) // returns a Subscription
 
 Arguments:
 
-- `channel` Required. Must be a string.
+- `channel` Required. Must be a string. Channel matching is done by ZeroMQ's prefix matching.
 - `filter` Optional. Must be an object. Specifies a filter to apply to incoming messages.
 - `projection` Optional. Must be an object. Specifies fields of incoming messages to return.
 
