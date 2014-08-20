@@ -9,7 +9,6 @@ if (PS === undefined) {
             return;
         }
         this._db = db;
-        this._allSubscriptions = [];
     }
 }
 
@@ -61,9 +60,7 @@ PS.prototype.subscribe = function(channel, filter, projection) {
         cmdObj.projection = projection;
     var res = this._db.runCommand(cmdObj) ;
     assert.commandWorked(res)
-    var subscription = new Subscription(res.subscriptionId, this);
-    this._allSubscriptions.push(subscription);
-    return subscription;
+    return new Subscription(res.subscriptionId, this);
 }
 
 PS.prototype.poll = function(id, timeout) {
@@ -85,8 +82,6 @@ PS.prototype.unsubscribe = function(id) {
                     "an object or array but was a " + idType);
     var res = this._db.runCommand({ unsubscribe: id });
     assert.commandWorked(res);
-    var idx = this._allSubscriptions.indexOf(id);
-    this._allSubscriptions.splice(idx, 1);
     return res;
 }
 
