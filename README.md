@@ -95,8 +95,29 @@ Filters and projections in pubsub have the same syntax as the query and projecti
 
 ## Poll
 
-- document signature and behavior, errors
-- document shell helper
+Signature:
+
+```
+{ poll : <subscriptionId(s)>, timeout : <timeout> }
+```
+
+From the Mongo shell:
+
+```
+subscription.poll([timeout])
+ps.poll(subscription.getId(), [timeout])
+ps.poll([ subscriptionIds ], [timeout])
+```
+
+Arguments:
+
+- `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+- `timeout` Optional. Must be an Int, Long, or Double. Specifies the number of milliseconds to wait on the server if no messeges are available. If the number is a Double, it is rounded down to the nearest integer. If no timeout is specified, the default is to return immediately.
+
+Errors:
+
+- In the event that an array is passed and not all array members are ObjectIds, the command will fail and no messages will be received on any subscription.
+- In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
 ## Unsubscribe
 
@@ -111,7 +132,7 @@ From the Mongo shell:
 ```
 subscription.unsubscribe()
 ps.unsubscribe(subscription.getId())
-ps.unsubscribe([subscription IDs])
+ps.unsubscribe([subscriptionIds])
 ```
 
 Arguments:
