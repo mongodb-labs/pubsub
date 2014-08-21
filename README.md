@@ -55,15 +55,11 @@ We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll
 ```
 { publish : <channel>, message : <message> }
 ```
-example:
-```
-{ publish : "myChannel", message : { hello : world } }
-```
 
 #####Arguments:
 
-- `channel` Required. Must be a string.
-- `message` Required. Must be an document.
+`channel` Required. Must be a string.
+`message` Required. Must be an document.
 
 #####Return:
 
@@ -71,7 +67,7 @@ example:
 
 #####Note:
 
-- The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
+The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
 
 
 
@@ -80,24 +76,20 @@ example:
 ```
 { subscribe : <channel> }
 ```
-example
-```
-{ subscribe : "myChannel" }
-```
 
 #####Arguments:
 
-- `channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
+`channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
 
 #####Return:
 
 `{ subscriptionId : <ObjectId> }`
 
-The subscriptionId (of type ObjectId) returned is used to poll from the subscription or unsubscribe from the subscription.
+The SubscriptionId (of type ObjectId) returned is used to poll from the subscription or unsubscribe from the subscription.
 
 #####Note:
 
-- As of now, subscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same _channel_ on different _subscriptionId's_).
+As of now, SubscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same _channel_ on different _subscriptionId's_).
 
 
 
@@ -109,8 +101,8 @@ The subscriptionId (of type ObjectId) returned is used to poll from the subscrip
 
 #####Arguments:
 
-- `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
-- `timeout` Optional. Must be an Int, Long, or Double (Double gets truncated). Specifies the number of milliseconds to wait on the server if no messeges are immediately available. If no timeout is specified, the default is to return immediately.
+`subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+`timeout` Optional. Must be an Int, Long, or Double (Double gets truncated). Specifies the number of milliseconds to wait on the server if no messeges are immediately available. If no timeout is specified, the default is to return immediately.
 
 #####Return:
 
@@ -118,80 +110,89 @@ A document of the form:
 
 ```
 { messages : 
-  { <subscriptionId> : 
-    { <channel> : [ <messages> ],
-      <channel> : [ <messages> ]
-    }
+  { <subscriptionId1> : 
+      { <channelA> : [ <messages> ],
+        <channelB> : [ <messages> ]
+      },
+    <subscriptionId2> : 
+      { <channelA> : [ <messages> ],
+        <channelC> : [ <messages> ]
+      }
   }
 }
 ```
-Therefore, when passing an array of SubscriptionIds, messages are grouped first by SubscriptionId, then by channel (in case the subscription applies to multiple channels through prefix-matching).
-
+Therefore, when passing an array of SubscriptionIds, messages are grouped first by SubscriptionId, then by channel (in case the subscription applies to multiple channels due to prefix-matching).
 
 #####Note:
 
-- In the event that an array is passed and not all array members are ObjectIds, the command will fail and no messages will be received on any subscription.
-- In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
+In the event that an array is passed and not all array members are _ObjectIds_, this command will fail and no messages will be received on any subscription.
+
+In the event that an array is passed and an ObjectId is not a _valid subscription_, an error string will be appended to result.errors[invalid ObjectId].
+
+
 
 ### Unsubscribe
-
-Signature:
 
 ```
 { unsubscribe : <subscriptionId(s)> }
 ```
 
-From the Mongo shell:
+#####Arguments:
 
-```
-subscription.unsubscribe()
-ps.unsubscribe(subscription.getId())
-ps.unsubscribe([subscriptionIds])
-```
+`subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
 
-Arguments:
+#####Return:
+`{ ok : 1 }`
 
-- `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+#####Note:
 
-Errors:
-
-- In the event that an array is passed and not all array members are ObjectIds, the command will fail and no subscriptions will be unsubscribed.
-- In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
+Same notes as for poll.
 
 
 ##Shell Helper
 
-These are accessible from the Mongo shell through the `ps` variable.
+We additionally implemented four helper commands for the Mongo shell in javascript. These are accessible through the `ps` object in the Mongo shell.
 
-```javascript
-> var ps = db.PS()
-> var subscription = ps.subscribe(channel, [filter], [projection]) // returns a Subscription object
-> ps.publish(channel, message)
-> subscription.poll([timeout]) // returns message
-> subscription.unsubscribe()
-```
-
-From the Mongo shell:
-
+The publish helper is a straightforward wrapper around the server command:
 ```
 ps.publish(channel, message)
 ```
 
-From the Mongo shell:
-
+The subscribe helper returns a Subscription object which is used to manipulate subscriptions, hiding away the actual SubscriptionId:
 ```
-ps.subscribe(channel, [filter], [projection]) // returns a Subscription
+ps.subscribe(channel) // returns a Subscription object
 ```
 
-- document subscription object methods
-- document shell helper
-
-From the Mongo shell:
-
+This Subscription object can then be used to poll in two ways:
 ```
 subscription.poll([timeout])
 ps.poll(subscription.getId(), [timeout])
-ps.poll([ subscriptionIds ], [timeout])
+```
+
+Further, the ps.poll helper can take an array:
+```
+ps.poll([ subscriptionId1.getId(), subscriptionId2.get(), ... ], [timeout])
+```
+
+Similarly, the Subscription object can be used to unsubscribe in two ways:
+```
+subscription.unsubscribe()
+ps.unsubscribe(subscription.getId())
+```
+
+And the ps.unsubscribe helper can also take an array:
+```
+ps.unsubscribe([subscriptionIds])
+```
+
+All together, a simple script would look like:
+
+```javascript
+> var ps = db.PS()
+> var subscription = ps.subscribe(channel) // returns a Subscription object
+> ps.publish(channel, message)
+> subscription.poll([timeout]) // returns message
+> subscription.unsubscribe()
 ```
 
 # Features
