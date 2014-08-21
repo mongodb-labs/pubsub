@@ -201,12 +201,48 @@ All together, a simple script would look like:
 
 In addition to core pub/sub functionality (publish, subscribe, poll, unsubscribe), we implemented the following features:
 
-###Filters and Projections
+###Filters
 
-- `filter` Optional. Must be a document. Specifies a filter to apply to incoming messages.
-- `projection` Optional. Must be a document of the form . Specifies fields of incoming messages to return.
+Normally, it would be up to some filtering system on the client side to only pass along the interesting documents to the rest of the application. This would not only require each application to build its own filtering logic (or use some third-party library), but would also result in a lot of useless data being transmitted over the network. Since MongoDB already has a powerful and well-known query framework, it would be greatly useful to utilize it for applying filters in the pub/sub system.
 
-Filters and projections in pubsub have the same syntax as the query and projection fields of a read command. See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for documentation on filter syntax and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
+Filters can be applied to messages on subscriptions in the same way that a query is applied to documents in a collection. The filter is designated through a "filter" field in the command argument on the server:
+
+```
+{ subscribe : <channel>, filter: <document> }
+```
+For example, the following will return only documents with field 'a' greater than '10'.
+```
+{ subscribe : <channel>, filter: { $gt : {a : 10} }
+```
+
+See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for full documentation on MongoDB query syntax.
+
+
+###Projections
+
+Some applications may know before-hand that they only need specific fields in each message. In this case, they can apply a projection to their subscription, specifying which fields to deliver. 
+
+A projection is specified as a document containing all fields to be delivered.
+```
+{ subscribe : <channel>, projection: <document> }
+```
+
+For example, the following will return only the 'type' and 'author' fields in each document:
+```
+{ subscribe : <channel>, projection: { type : 1, author : 1 }
+```
+
+
+
+
+Filters and projections can be applied simultaneously:
+```
+{ subscribe : <channel>, filter: <document>, projection: document}
+```
+
+
+
+Filters and projections in pubsub have the same syntax as the query and projection fields of a read command.  and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
 
 ###Database Event Notifications
 
