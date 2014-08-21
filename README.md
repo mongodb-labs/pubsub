@@ -229,7 +229,7 @@ See [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-res
 
 Filters and projections can be applied simultaneously:
 ```
-{ subscribe : <channel>, filter: <document>, projection: document}
+{ subscribe : <channel>, filter: <document>, projection: <document> }
 ```
 
 
@@ -239,7 +239,14 @@ Filters and projections can be applied simultaneously:
 
 # Performance
 
-- include graphs and numbers here
+Since pub/sub is implemented in MongoDB through the Command interface, the throughput of the pub/sub commands is similar to other database commands.
+
+Below are the commands/second processed by the server under an increasing load of clients. "Light" indicates that the messages being published or polled were about 10 bytes; "heavy" messages were about 400 bytes.
+
+![alt tag](https://raw.githubusercontent.com/10gen-interns/pubsub/pubsub/benchmark.png)
+
+
+These statistics are comparable to other brokered messaging queue systems.
 
 # TODO
 
