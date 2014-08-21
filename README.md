@@ -109,11 +109,7 @@ Filters and projections in pubsub have the same syntax as the query and projecti
 - document subscription object methods
 - document shell helper
 
-### Database Events
-
-- document channels and behavior, setParameter
-
-## Poll
+### Poll
 
 Signature:
 
@@ -139,7 +135,7 @@ Errors:
 - In the event that an array is passed and not all array members are ObjectIds, the command will fail and no messages will be received on any subscription.
 - In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
-## Unsubscribe
+### Unsubscribe
 
 Signature:
 
