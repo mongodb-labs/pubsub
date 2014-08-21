@@ -59,6 +59,7 @@ We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll
 #####Arguments:
 
 `channel` Required. Must be a string.
+
 `message` Required. Must be an document.
 
 #####Return:
@@ -102,6 +103,7 @@ As of now, SubscriptionId's are insecure, meaning any client can poll from a sub
 #####Arguments:
 
 `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+
 `timeout` Optional. Must be an Int, Long, or Double (Double gets truncated). Specifies the number of milliseconds to wait on the server if no messeges are immediately available. If no timeout is specified, the default is to return immediately.
 
 #####Return:
@@ -182,7 +184,7 @@ ps.unsubscribe(subscription.getId())
 
 And the ps.unsubscribe helper can also take an array:
 ```
-ps.unsubscribe([subscriptionIds])
+ps.unsubscribe([ subscriptionId1.getId(), subscriptionId2.get(), ... ], [timeout])
 ```
 
 All together, a simple script would look like:
