@@ -105,8 +105,8 @@ Subscription.prototype.getId = function() {
 
 Subscription.prototype.forEach = function(callback) {
     while (true) {
-        var res = this.poll(1000); // 1 second timeout by default
-        callback(res);
+        var res = this.poll(10000); // 10 second timeout by default
+        if (Object.keys(res.messages).length !== 0) callback(res.messages[this._id.str]);
     }
 }
 
