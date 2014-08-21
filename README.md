@@ -20,7 +20,7 @@ Publish/subscribe abstracts the routing and delivery aspects of communication in
 
 Using pub/sub within MongoDB has many benefits:
 
-- Many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up developement, since the syntax, setup, and maintenance are shared.
+- Many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development, since the syntax, setup, and maintenance are shared.
 - Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings, and using the exact same query syntax to filter messages on channels as to query documents in collections.
 - Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is an internal implementation built on top of pub/sub.
 
@@ -47,90 +47,88 @@ In particular, we were able to design a broker-less internal communication syste
 
 # API + Documentation
 
-In addition to MongoDB's basic behavior, we implemented 4 additional database commands: `publish`, `subscribe`, `poll`, and `unsubscribe`.
+We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll`, and `unsubscribe`:
 
-These are accessible from the Mongo shell through the `ps` variable.
-
-```javascript
-> var ps = db.PS()
-> var subscription = ps.subscribe(channel, [filter], [projection]) // returns a Subscription object
-> ps.publish(channel, message)
-> subscription.poll([timeout]) // returns message
-> subscription.unsubscribe()
-```
-
-The server API for for each of these commands is as follows:
 
 ### Publish
-
-Signature:
 
 ```
 { publish : <channel>, message : <message> }
 ```
-
-From the Mongo shell:
-
+example:
 ```
-ps.publish(channel, message)
+{ publish : "myChannel", message : { hello : world } }
 ```
 
-Arguments:
+#####Arguments:
 
 - `channel` Required. Must be a string.
-- `message` Required. Must be an object.
+- `message` Required. Must be an document.
 
-Other:
+#####Return:
+
+`{ok : 1}`
+
+#####Note:
 
 - The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
+
+
 
 ### Subscribe
 
 ```
-{ subscribe : <channel>, filter : <filter>, projection: <projection> }
+{ subscribe : <channel> }
+```
+example
+```
+{ subscribe : "myChannel" }
 ```
 
-From the Mongo shell:
+#####Arguments:
 
-```
-ps.subscribe(channel, [filter], [projection]) // returns a Subscription
-```
+- `channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
 
-Arguments:
+#####Return:
 
-- `channel` Required. Must be a string. Channel matching is done by ZeroMQ's prefix matching.
-- `filter` Optional. Must be an object. Specifies a filter to apply to incoming messages.
-- `projection` Optional. Must be an object. Specifies fields of incoming messages to return.
+`{ subscriptionId : <ObjectId> }`
 
-Filters and projections in pubsub have the same syntax as the query and projection fields of a read command. See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for documentation on filter syntax and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
+The subscriptionId (of type ObjectId) returned is used to poll from the subscription or unsubscribe from the subscription.
 
-### Subscriptions
+#####Note:
 
-- document subscription object methods
-- document shell helper
+- As of now, subscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same _channel_ on different _subscriptionId's_).
+
+
 
 ### Poll
-
-Signature:
 
 ```
 { poll : <subscriptionId(s)>, timeout : <timeout> }
 ```
 
-From the Mongo shell:
-
-```
-subscription.poll([timeout])
-ps.poll(subscription.getId(), [timeout])
-ps.poll([ subscriptionIds ], [timeout])
-```
-
-Arguments:
+#####Arguments:
 
 - `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
-- `timeout` Optional. Must be an Int, Long, or Double. Specifies the number of milliseconds to wait on the server if no messeges are available. If the number is a Double, it is rounded down to the nearest integer. If no timeout is specified, the default is to return immediately.
+- `timeout` Optional. Must be an Int, Long, or Double (Double gets truncated). Specifies the number of milliseconds to wait on the server if no messeges are immediately available. If no timeout is specified, the default is to return immediately.
 
-Errors:
+#####Return:
+
+A document of the form:
+
+```
+{ messages : 
+  { <subscriptionId> : 
+    { <channel> : [ <messages> ],
+      <channel> : [ <messages> ]
+    }
+  }
+}
+```
+Therefore, when passing an array of SubscriptionIds, messages are grouped first by SubscriptionId, then by channel (in case the subscription applies to multiple channels through prefix-matching).
+
+
+#####Note:
 
 - In the event that an array is passed and not all array members are ObjectIds, the command will fail and no messages will be received on any subscription.
 - In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
@@ -161,12 +159,51 @@ Errors:
 - In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
 
+##Shell Helper
+
+These are accessible from the Mongo shell through the `ps` variable.
+
+```javascript
+> var ps = db.PS()
+> var subscription = ps.subscribe(channel, [filter], [projection]) // returns a Subscription object
+> ps.publish(channel, message)
+> subscription.poll([timeout]) // returns message
+> subscription.unsubscribe()
+```
+
+From the Mongo shell:
+
+```
+ps.publish(channel, message)
+```
+
+From the Mongo shell:
+
+```
+ps.subscribe(channel, [filter], [projection]) // returns a Subscription
+```
+
+- document subscription object methods
+- document shell helper
+
+From the Mongo shell:
+
+```
+subscription.poll([timeout])
+ps.poll(subscription.getId(), [timeout])
+ps.poll([ subscriptionIds ], [timeout])
+```
+
 # Features
 
-In addition to core pub/sub functionality (allowing subscribers to subscribe to channels, poll for messages, and unsubscribe; allowing publishers to publish to channels), we implemented the following features:
+In addition to core pub/sub functionality (publish, subscribe, poll, unsubscribe), we implemented the following features:
 
 ###Filters and Projections
 
+- `filter` Optional. Must be a document. Specifies a filter to apply to incoming messages.
+- `projection` Optional. Must be a document of the form . Specifies fields of incoming messages to return.
+
+Filters and projections in pubsub have the same syntax as the query and projection fields of a read command. See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for documentation on filter syntax and [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
 
 ###Database Event Notifications
 
