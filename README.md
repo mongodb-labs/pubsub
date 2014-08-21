@@ -11,7 +11,8 @@ See docs/building.md or navigate to www.mongodb.org and search for "Building".
 
 ##Drivers
 
-An example node.js driver is available [here](https://github.com/ajgrover/node-mongodb-pubsub). This driver provides access to all the server functionality implemented here, including filters and projections on channels and database event notifications.
+An example node.js driver is available [here](https://github.com/ajgrover/node-mongodb-pubsub). This driver provides access to all the server functionality implemented here, including filters and projections, and database event notifications.
+
 
 # Motivation
 
@@ -19,7 +20,7 @@ Publish/subscribe abstracts the routing and delivery aspects of communication in
 
 Using pub/sub within MongoDB has many benefits:
 
-- Many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack, while also being easy to develop with quickly, since the syntax, setup, and maintenance are shared.
+- Many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up developement, since the syntax, setup, and maintenance are shared.
 - Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings, and using the exact same query syntax to filter messages on channels as to query documents in collections.
 - Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is an internal implementation built on top of pub/sub.
 
@@ -44,13 +45,7 @@ In a sharded cluster, all messages published to any mongos will be sent to subsc
 In particular, we were able to design a broker-less internal communication system for replica sets on top of ZeroMQ’s pub/sub socket API, but a hub-based communication system for sharded clusters using the same simple API. We chose ZeroMQ over related alternatives such as RabbitMQ, because ZMQ is a library rather than a messaging implementation in itself.
 
 
-# Features
-
-- regular pubsub
-- filters/projections
-- database event notifications
-
-# API Documentation
+# API + Documentation
 
 In addition to MongoDB's basic behavior, we implemented 4 additional database commands: `publish`, `subscribe`, `poll`, and `unsubscribe`.
 
@@ -66,7 +61,7 @@ These are accessible from the Mongo shell through the `ps` variable.
 
 The server API for for each of these commands is as follows:
 
-## Publish
+### Publish
 
 Signature:
 
@@ -89,7 +84,7 @@ Other:
 
 - The channel `$events` is reserved for database event notifications and will return an error if a user attempts to publish to it.
 
-## Subscribe
+### Subscribe
 
 ```
 { subscribe : <channel>, filter : <filter>, projection: <projection> }
@@ -169,7 +164,15 @@ Errors:
 - In the event that an array is passed and not all array members are ObjectIds, the command will fail and no subscriptions will be unsubscribed.
 - In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
-## Database Events
+
+# Features
+
+In addition to core pub/sub functionality (allowing subscribers to subscribe to channels, poll for messages, and unsubscribe; allowing publishers to publish to channels), we implemented the following features:
+
+###Filters and Projections
+
+
+###Database Event Notifications
 
 - document shell helper
 
