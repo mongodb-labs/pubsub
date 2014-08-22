@@ -1,20 +1,19 @@
-MongoDB + Pub/Sub
+MongoDB + Pub/sub
 =================
 
-Welcome to [MongoDB](https://github.com/mongodb/mongo)! This is an implementation of publish/subscribe within MongoDB v2.6.3 using [ZeroMQ](http://zeromq.org), a MongoDB summer 2014 intern project by [Alex Grover](https://github.com/ajgrover) and [Esha Maharishi](https://github.com/EshaMaharishi).
+Welcome to [MongoDB](https://github.com/mongodb/mongo)! This is an implementation of publish/subscribe within MongoDB v2.6.3 using [ZeroMQ](http://zeromq.org). This is a MongoDB summer 2014 intern project by [Alex Grover](https://github.com/ajgrover) and [Esha Maharishi](https://github.com/EshaMaharishi).
 
 Note: this is a prototype and is _not_ production ready.
 
 Building
 --------
 
-See docs/building.md or navigate to www.mongodb.org and search for "Building".
+See docs/building.md or check out the [documentation](http://www.mongodb.org/about/contributors/tutorial/build-mongodb-from-source/).
 
 Drivers
 -------
 
-An example node.js driver is available [here](https://github.com/ajgrover/node-mongodb-pubsub). This driver provides access to all the server functionality implemented here, including filters and projections, and database event notifications.
-
+An example node.js driver is available [here](https://github.com/ajgrover/node-mongodb-pubsub). This driver provides access to all the server functionality implemented here, including filters, projections, and database event notifications.
 
 Motivation
 ----------
@@ -23,37 +22,44 @@ Publish/subscribe abstracts the routing and delivery aspects of communication in
 
 Using pub/sub within MongoDB has many benefits:
 
-- Many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development, since the syntax, setup, and maintenance are shared.
-- Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings, and using the exact same query syntax to filter messages on channels as to query documents in collections.
+- There are many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development because the syntax, setup, and maintenance are shared.
+- Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings and using the exact same query syntax to filter messages on channels as to query documents in the database.
 - Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is an internal implementation built on top of pub/sub.
-
 
 Design
 ------
 
 ### Considerations
+
 We designed the behavior of our pub/sub system to closely align with existing behaviors of reads (for subscriptions) and writes (for publishes) in MongoDB and to provide a simple and logical interface to application developers.
 
 Additionally, our system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be simply integrated in existing production environments.
 
 ### Architecture
-On a single mongod server, all messages published to the instance will be sent to all subscribers on the instance.
+
+On a standalone mongod server, all messages published to the instance will be sent to all subscribers on the instance.
 
 In a replica set, all messages published to any node in the set will be sent to subscribers on all nodes in the set. In this way, a replica set is logically equivalent to a single server. Additionally, interactions with a single server do not need to be changed if and when the server is added to a replica set.
 
-In a sharded cluster, all messages published to any mongos will be sent to subscribers on all mongoses. However, messages published to a mongod in a shard will *NOT* be sent to subscribers on mongoses, and vice versa. In this way, the logical entry point for pub/sub within a cluster is *ONLY* through mongos instances. Therefore, interactions with a replica set do not need to be changed if and when the set is added as a shard in a cluster.
+In a sharded cluster, all messages published to any mongos will be sent to subscribers on all mongoses. However, messages published to a mongod in a shard will *not* be sent to subscribers on mongoses, and vice versa. In this way, the logical entry point for pub/sub within a cluster is *only* through mongos instances. Therefore, interactions with a replica set do not need to be changed if and when the set is added as a shard in a cluster.
 
 ### ZeroMQ
+
 [ZeroMQ](http://zeromq.org) is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating a distributed architecture, ZeroMQ allowed us to construct our own communication patterns for different parts of our system, including direct one-to-one communication, pub/sub fan-out across a network, and pub/sub fan-out within a single process.
 
 In particular, we were able to design a broker-less internal communication system for replica sets on top of ZeroMQ’s pub/sub socket API, but a hub-based communication system for sharded clusters using the same simple API. We chose ZeroMQ over related alternatives such as RabbitMQ, because ZeroMQ is a library rather than a messaging implementation in itself.
 
 
+
+TODO: this ^
+
+
+
+
 API + Documentation
 ===================
 
-We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll`, and `unsubscribe`:
-
+We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll`, and `unsubscribe`.
 
 ### Publish
 
@@ -63,9 +69,8 @@ We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll
 
 **Arguments:**
 
-`channel` Required. Must be a string.
-
-`message` Required. Must be an document.
+- `channel` Required. Must be a string.
+- `message` Required. Must be a document.
 
 **Return:**
 
@@ -83,17 +88,17 @@ The channel `$events` is reserved for database event notifications and will retu
 
 **Arguments:**
 
-`channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
+- `channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
 
 **Return:**
 
 `{ subscriptionId : <ObjectId> }`
 
-The SubscriptionId (of type ObjectId) returned is used to poll from the subscription or unsubscribe from the subscription.
+The subscriptionId (of type ObjectId) returned is used to poll or unsubscribe from the subscription.
 
 **Note:**
 
-As of now, SubscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same _channel_ on different _subscriptionId's_).
+As of now, subscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same channel on different subscriptionId's).
 
 ### Poll
 
@@ -103,9 +108,8 @@ As of now, SubscriptionId's are insecure, meaning any client can poll from a sub
 
 **Arguments:**
 
-`subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
-
-`timeout` Optional. Must be an Int, Long, or Double (Double gets truncated). Specifies the number of milliseconds to wait on the server if no messeges are immediately available. If no timeout is specified, the default is to return immediately.
+- `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
+- `timeout` Optional. Must be an Int, Long, or Double (Double gets rounded down). Specifies the number of milliseconds to wait on the server if no messages are immediately available. If no timeout is specified, the default is to return immediately.
 
 **Return:**
 
@@ -231,7 +235,7 @@ A projection is specified using the same syntax as projections on MongoDB querie
 { subscribe : <channel>, projection: { type : 1, author : 1 }
 ```
 
-See [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for documentation on projection syntax.
+See [here](http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/) for full documentation on projection syntax.
 
 **Note:**
 
@@ -268,6 +272,7 @@ TODO
 
 License
 =======
+
 Most MongoDB source files (src/mongo folder and below) are made available under the terms of the GNU Affero General Public License (AGPL).  See individual files for details.
 
 As an exception, the files in the client/, debian/, rpm/, utils/mongoutils, and all subdirectories thereof are made available under the terms of the Apache License, version 2.0.
