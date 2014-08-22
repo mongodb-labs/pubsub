@@ -22,9 +22,9 @@ Publish/subscribe abstracts the routing and delivery aspects of communication in
 
 Using pub/sub within MongoDB has many benefits:
 
-- There are many use cases call for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development because the syntax, setup, and maintenance are shared.
+- There are many use cases for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development because the syntax, setup, and maintenance are shared.
 - Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings and using the exact same query syntax to filter messages on channels as to query documents in the database.
-- Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is an internal implementation built on top of pub/sub.
+- Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is enabled by the implementation of pub/sub within the database.
 
 Design
 ------
@@ -33,7 +33,7 @@ Design
 
 We designed the behavior of our pub/sub system to closely align with existing behaviors of reads (for subscriptions) and writes (for publishes) in MongoDB and to provide a simple and logical interface to application developers.
 
-Additionally, our system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be simply integrated in existing production environments.
+Additionally, our system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be integrated in existing production environments.
 
 ### Architecture
 
@@ -41,20 +41,13 @@ On a standalone mongod server, all messages published to the instance will be se
 
 In a replica set, all messages published to any node in the set will be sent to subscribers on all nodes in the set. In this way, a replica set is logically equivalent to a single server. Additionally, interactions with a single server do not need to be changed if and when the server is added to a replica set.
 
-In a sharded cluster, all messages published to any mongos will be sent to subscribers on all mongoses. However, messages published to a mongod in a shard will *not* be sent to subscribers on mongoses, and vice versa. In this way, the logical entry point for pub/sub within a cluster is *only* through mongos instances. Therefore, interactions with a replica set do not need to be changed if and when the set is added as a shard in a cluster.
+In a sharded cluster, all messages published to any mongos will be sent to subscribers on all mongoses. However, messages published to a mongod in a shard will _not_ be sent to subscribers on mongoses, and vice versa. In this way, the logical entry point for pub/sub within a cluster is _only_ through mongos instances. Therefore, interactions with a replica set do not need to be changed if and when the set is added to a cluster.
 
 ### ZeroMQ
 
-[ZeroMQ](http://zeromq.org) is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating a distributed architecture, ZeroMQ allowed us to construct our own communication patterns for different parts of our system, including direct one-to-one communication, pub/sub fan-out across a network, and pub/sub fan-out within a single process.
+[ZeroMQ](http://zeromq.org) is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating an architecture, ZeroMQ allowed us to construct our own communication patterns for different parts of our system, including direct communication between nodes, pub/sub fan-out across a network, and pub/sub within a single process.
 
-In particular, we were able to design a broker-less internal communication system for replica sets on top of ZeroMQ’s pub/sub socket API, but a hub-based communication system for sharded clusters using the same simple API. We chose ZeroMQ over related alternatives such as RabbitMQ, because ZeroMQ is a library rather than a messaging implementation in itself.
-
-
-
-TODO: this ^
-
-
-
+In particular, we were able to design a brokerless internal communication system for replica sets on top of ZeroMQ’s socket API, but a centralized communication system for sharded clusters using the same simple API. We chose ZeroMQ over existing alternatives such as AMQP, because ZeroMQ is a library rather than a messaging protocol or implementation.
 
 API + Documentation
 ===================
@@ -135,8 +128,6 @@ Therefore, when passing an array of SubscriptionIds, messages are grouped first 
 In the event that an array is passed and not all array members are _ObjectIds_, this command will fail and no messages will be received on any subscription.
 
 In the event that an array is passed and an ObjectId is not a _valid subscription_, an error string will be appended to result.errors[invalid ObjectId].
-
-
 
 ### Unsubscribe
 
@@ -245,7 +236,7 @@ Filters and projections can be applied simultaneously:
 { subscribe : <channel>, filter: <document>, projection: <document> }
 ```
 
-###Database Event Notifications
+### Database Event Notifications
 
 - TODO: document shell helper
 
