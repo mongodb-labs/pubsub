@@ -31,9 +31,9 @@ Design
 
 ### Considerations
 
-We designed the behavior of our pub/sub system to closely align with existing behaviors of reads (for subscriptions) and writes (for publishes) in MongoDB and to provide a simple and logical interface to application developers.
+The behavior of the pub/sub system was designed to closely align with existing behaviors of reads (for subscriptions) and writes (for publishes) in MongoDB and to provide a simple and logical interface to application developers.
 
-Additionally, our system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be integrated in existing production environments.
+Additionally, the system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be integrated in existing production environments.
 
 ### Architecture
 
@@ -45,19 +45,17 @@ In a sharded cluster, all messages published to any mongos will be sent to subsc
 
 ### ZeroMQ
 
-[ZeroMQ](http://zeromq.org) is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating an architecture, ZeroMQ allowed us to construct our own communication patterns for different parts of our system, including direct communication between nodes, pub/sub fan-out across a network, and pub/sub within a single process.
-
-In particular, we were able to design a brokerless internal communication system for replica sets on top of ZeroMQ’s socket API, but a centralized communication system for sharded clusters using the same simple API. We chose ZeroMQ over existing alternatives such as AMQP, because ZeroMQ is a library rather than a messaging protocol or implementation.
+[ZeroMQ](http://zeromq.org) is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating an architecture, ZeroMQ allows the implementation of a brokerless internal communication system for replica sets on top of ZeroMQ’s socket API, but a centralized architecture for sharded clusters using the same simple API. In addition, ZeroMQ's pub/sub sockets encapsulate well-tested functionality regarding channel matching and message buffering, with well-defined behavior in case of an error.
 
 API + Documentation
 ===================
 
-We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll`, and `unsubscribe`.
+Pub/sub is implemented through four database commands: `publish`, `subscribe`, `poll`, and `unsubscribe`.
 
 ### Publish
 
 ```
-{ publish : <channel>, message : <message> }
+{ publish: <channel>, message: <message> }
 ```
 
 **Arguments:**
@@ -67,7 +65,7 @@ We implemented four database commands for pub/sub: `publish`, `subscribe`, `poll
 
 **Return:**
 
-`{ok : 1}`
+`{ok: 1}`
 
 **Note:**
 
@@ -76,16 +74,18 @@ The channel `$events` is reserved for database event notifications and will retu
 ### Subscribe
 
 ```
-{ subscribe : <channel> }
+{ subscribe: <channel>, filter: <document>, projection: <document> }
 ```
 
 **Arguments:**
 
 - `channel` Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.
 
+See below for detailed documentation on filters and projections.
+
 **Return:**
 
-`{ subscriptionId : <ObjectId> }`
+`{ subscriptionId: <ObjectId> }`
 
 The subscriptionId (of type ObjectId) returned is used to poll or unsubscribe from the subscription.
 
@@ -96,7 +96,7 @@ As of now, subscriptionId's are insecure, meaning any client can poll from a sub
 ### Poll
 
 ```
-{ poll : <subscriptionId(s)>, timeout : <timeout> }
+{ poll: <subscriptionId(s)>, timeout: <timeout> }
 ```
 
 **Arguments:**
@@ -109,30 +109,31 @@ As of now, subscriptionId's are insecure, meaning any client can poll from a sub
 A document of the form:
 
 ```
-{ messages : 
-  { <subscriptionId1> : 
-      { <channelA> : [ <messages> ],
-        <channelB> : [ <messages> ]
+{
+  messages: { 
+    <subscriptionId1>: {
+        <channelA>: [ <messages> ],
+        <channelB>: [ <messages> ]
       },
-    <subscriptionId2> : 
-      { <channelA> : [ <messages> ],
-        <channelC> : [ <messages> ]
+    <subscriptionId2>: {
+        <channelA>: [ <messages> ],
+        <channelC>: [ <messages> ]
       }
   }
 }
 ```
 Therefore, when passing an array of SubscriptionIds, messages are grouped first by SubscriptionId, then by channel (in case the subscription applies to multiple channels due to prefix-matching).
 
-**Note:**
+**Notes:**
 
-In the event that an array is passed and not all array members are _ObjectIds_, this command will fail and no messages will be received on any subscription.
+In the event that an array is passed and not all array members are ObjectIds, this command will fail and no messages will be received on any subscription.
 
-In the event that an array is passed and an ObjectId is not a _valid subscription_, an error string will be appended to result.errors[invalid ObjectId].
+In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].
 
 ### Unsubscribe
 
 ```
-{ unsubscribe : <subscriptionId(s)> }
+{ unsubscribe: <subscriptionId(s)> }
 ```
 
 **Arguments:**
@@ -140,16 +141,16 @@ In the event that an array is passed and an ObjectId is not a _valid subscriptio
 `subscriptionId` Required. Must be an ObjectId or array of ObjectIds.
 
 **Return:**
-`{ ok : 1 }`
+`{ ok: 1 }`
 
-**Note:**
+**Notes:**
 
-Same notes as for poll.
+See the notes for the poll command.
 
 Shell Helper
 ------------
 
-We additionally implemented four helper commands for the Mongo shell in javascript. These are accessible through the `ps` object in the Mongo shell.
+Four helper commands for the Mongo shell exist to enable usage of pub/sub. These are accessible through the `ps` object in the Mongo shell. This object is initialized by running `var ps = db.PS()` from the shell.
 
 The publish helper is a straightforward wrapper around the server command:
 
@@ -167,26 +168,20 @@ This Subscription object can then be used to poll in two ways:
 
 ```
 subscription.poll([timeout])
-ps.poll(subscription.getId(), [timeout])
+ps.poll([subscription.getId(), ...], [timeout]) // can take a single Id or an array of Ids
 ```
 
-Further, the ps.poll helper can take an array:
+The Subscription object also provides a forEach method that polls continuously with a 10 second timeout and calls a callback with each response:
 
 ```
-ps.poll([ subscriptionId1.getId(), subscriptionId2.get(), ... ], [timeout])
+subscription.forEach(function(res) { printjson(res); })
 ```
 
 Similarly, the Subscription object can be used to unsubscribe in two ways:
 
 ```
 subscription.unsubscribe()
-ps.unsubscribe(subscription.getId())
-```
-
-And the ps.unsubscribe helper can also take an array:
-
-```
-ps.unsubscribe([ subscriptionId1.getId(), subscriptionId2.get(), ... ], [timeout])
+ps.unsubscribe([subscription.getId(), ...]) // can also take a single Id or an array of Ids
 ```
 
 All together, a simple script would look like:
@@ -202,13 +197,13 @@ All together, a simple script would look like:
 Features
 ========
 
-In addition to core pub/sub functionality (publish, subscribe, poll, unsubscribe), we implemented the following features:
+In addition to core pub/sub functionality (publish, subscribe, poll, unsubscribe), this project implements the following features:
 
 ### Filters
 
-Normally, it would be up to some filtering system on the client side to only pass along the interesting documents to the rest of the application. This would not only require each application to build its own filtering logic (or use some third-party library), but would also result in a lot of useless data being transmitted over the network. Since MongoDB already has a powerful and well-known query framework, it would be greatly useful to utilize it for applying filters in the pub/sub system.
+Normally, it would be up to some filtering system on the client side to only pass along the interesting documents to the rest of the application. This would not only require each application to build its own filtering logic (or use some third-party library), but would also result in a lot of useless data being transmitted over the network. Since MongoDB already has a powerful and well-known query framework, it makes sense utilize it for applying filters within the pub/sub system.
 
-Filters can be applied to messages on subscriptions in the same way that a query is applied to documents in a collection. The filter is designated through a "filter" field in the subscribe command. For example, the following will return only documents with field 'a' greater than '10'.
+Filters can be applied to messages on subscriptions in the same way that a query is applied to documents in a collection. The filter is designated through a "filter" field in the subscribe command. For example, the following will return only documents with field `a` greater than 10.
 
 ```
 { subscribe : <channel>, filter: { $gt : {a : 10} }
@@ -220,7 +215,7 @@ See [here](http://docs.mongodb.org/manual/tutorial/query-documents/) for full do
 
 Some applications may know before-hand that they only need specific fields in each message. In this case, they can apply a projection to their subscription, specifying which fields to deliver. 
 
-A projection is specified using the same syntax as projections on MongoDB queries. The projection is designated through a "projection" field in the subscribe command. For example, the following will return only the 'type' and 'author' fields in each document:
+A projection is specified using the same syntax as projections on MongoDB queries. The projection is designated through a `projection` field in the subscribe command. For example, the following will return only the `type` and `author` fields in each document:
 
 ```
 { subscribe : <channel>, projection: { type : 1, author : 1 }
@@ -238,7 +233,20 @@ Filters and projections can be applied simultaneously:
 
 ### Database Event Notifications
 
-- TODO: document shell helper
+As noted above, one major benefit of having a pub/sub system integrated into MongoDB is the ability to publish database change notifications. The channel `$events` is reserved within the system and used to publish database event notifications.
+
+To enable database notifications, start a mongodb server with the command line option `--setParameter publishDataEvents=1`.
+
+While it is possible to subscribe to the events channel manually, the Mongo shell provides convenient helper methods to get notifications on collections or databases:
+
+```
+db.subscribeToChanges([type])
+db.collection.subscribeToChanges([type])
+```
+
+**Arguments:**
+
+`type` Optional. Specifies the type of events to be notified of. Valid options are the strings 'insert', 'update', and 'remove'.
 
 Performance
 ===========
