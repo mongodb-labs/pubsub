@@ -255,7 +255,7 @@ Since pub/sub is implemented in MongoDB through the Command interface, the throu
 
 Below are the commands/second processed by the server under an increasing load of clients. "Light" indicates that the messages being published or polled were about 10 bytes; "heavy" messages were about 400 bytes.
 
-![alt tag](https://raw.githubusercontent.com/10gen-interns/pubsub/pubsub/benchmark.png)
+![alt tag](https://raw.githubusercontent.com/10gen-interns/pubsub/master/benchmark.png)
 
 These statistics are comparable to other brokered messaging queue systems.
 
