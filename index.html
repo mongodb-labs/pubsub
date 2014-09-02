@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Pubsub by ajgrover</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Pubsub</h1>
+          <h2></h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/ajgrover/pubsub/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/ajgrover/pubsub/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/ajgrover/pubsub" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>
+<a name="mongodb--pubsub" class="anchor" href="#mongodb--pubsub"><span class="octicon octicon-link"></span></a>MongoDB + Pub/sub</h1>
+
+<p>Welcome to <a href="https://github.com/mongodb/mongo">MongoDB</a>! This is an implementation of publish/subscribe within MongoDB v2.6.3 using <a href="http://zeromq.org">ZeroMQ</a>. This is a MongoDB summer 2014 intern project by <a href="https://github.com/ajgrover">Alex Grover</a> and <a href="https://github.com/EshaMaharishi">Esha Maharishi</a>.</p>
+
+<p>Note: this is a prototype and is <em>not</em> production ready.</p>
+
+<h2>
+<a name="building" class="anchor" href="#building"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<p>See docs/building.md or check out the <a href="http://www.mongodb.org/about/contributors/tutorial/build-mongodb-from-source/">documentation</a>.</p>
+
+<h2>
+<a name="drivers" class="anchor" href="#drivers"><span class="octicon octicon-link"></span></a>Drivers</h2>
+
+<p>An example node.js driver is available <a href="https://github.com/ajgrover/node-mongodb-pubsub">here</a>. This driver provides access to all the server functionality implemented here, including filters, projections, and database event notifications.</p>
+
+<h2>
+<a name="motivation" class="anchor" href="#motivation"><span class="octicon octicon-link"></span></a>Motivation</h2>
+
+<p>Publish/subscribe abstracts the routing and delivery aspects of communication into its own layer, allowing nodes to pass information without the added complexity of initiating and maintaining connections to receivers. A node can simply "publish" information to a channel on MongoDB, another node can "subscribe" to that channel, and MongoDB handles routing and delivering the information.</p>
+
+<p>Using pub/sub within MongoDB has many benefits:</p>
+
+<ul>
+<li>There are many use cases for both a database and pub/sub, and combining the two reduces the number of components in the application stack. It also speeds up development because the syntax, setup, and maintenance are shared.</li>
+<li>Pub/sub in MongoDB benefits from the existing power of Mongo, such as allowing messages to be structured documents rather than plain strings and using the exact same query syntax to filter messages on channels as to query documents in the database.</li>
+<li>Pub/sub can be used to deliver information about changes to the database to subscribers in real-time. This is something that cannot be accomplished with an external pub/sub system, but is enabled by the implementation of pub/sub within the database.</li>
+</ul><h2>
+<a name="design" class="anchor" href="#design"><span class="octicon octicon-link"></span></a>Design</h2>
+
+<h3>
+<a name="considerations" class="anchor" href="#considerations"><span class="octicon octicon-link"></span></a>Considerations</h3>
+
+<p>The behavior of the pub/sub system was designed to closely align with existing behaviors of reads (for subscriptions) and writes (for publishes) in MongoDB and to provide a simple and logical interface to application developers.</p>
+
+<p>Additionally, the system is designed to need no stricter requirements on connections between servers than already exist for replication and sharding, allowing pub/sub to be integrated in existing production environments.</p>
+
+<h3>
+<a name="architecture" class="anchor" href="#architecture"><span class="octicon octicon-link"></span></a>Architecture</h3>
+
+<p>On a standalone mongod server, all messages published to the instance will be sent to all subscribers on the instance.</p>
+
+<p>In a replica set, all messages published to any node in the set will be sent to subscribers on all nodes in the set. In this way, a replica set is logically equivalent to a single server. Additionally, interactions with a single server do not need to be changed if and when the server is added to a replica set.</p>
+
+<p>In a sharded cluster, all messages published to any mongos will be sent to subscribers on all mongoses. However, messages published to a mongod in a shard will <em>not</em> be sent to subscribers on mongoses, and vice versa. In this way, the logical entry point for pub/sub within a cluster is <em>only</em> through mongos instances. Therefore, interactions with a replica set do not need to be changed if and when the set is added to a cluster.</p>
+
+<h3>
+<a name="zeromq" class="anchor" href="#zeromq"><span class="octicon octicon-link"></span></a>ZeroMQ</h3>
+
+<p><a href="http://zeromq.org">ZeroMQ</a> is a standalone socket library that provides the tools to implement common messaging patterns across distributed systems. Rather than dictating an architecture, ZeroMQ allows the implementation of a brokerless internal communication system for replica sets on top of ZeroMQ’s socket API, but a centralized architecture for sharded clusters using the same simple API. In addition, ZeroMQ's pub/sub sockets encapsulate well-tested functionality regarding channel matching and message buffering, with well-defined behavior in case of an error.</p>
+
+<h1>
+<a name="api--documentation" class="anchor" href="#api--documentation"><span class="octicon octicon-link"></span></a>API + Documentation</h1>
+
+<p>Pub/sub is implemented through four database commands: <code>publish</code>, <code>subscribe</code>, <code>poll</code>, and <code>unsubscribe</code>.</p>
+
+<h3>
+<a name="publish" class="anchor" href="#publish"><span class="octicon octicon-link"></span></a>Publish</h3>
+
+<pre><code>{ publish: &lt;channel&gt;, message: &lt;message&gt; }
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+
+<ul>
+<li>
+<code>channel</code> Required. Must be a string.</li>
+<li>
+<code>message</code> Required. Must be a document.</li>
+</ul><p><strong>Return:</strong></p>
+
+<p><code>{ok: 1}</code></p>
+
+<p><strong>Note:</strong></p>
+
+<p>The channel <code>$events</code> is reserved for database event notifications and will return an error if a user attempts to publish to it.</p>
+
+<h3>
+<a name="subscribe" class="anchor" href="#subscribe"><span class="octicon octicon-link"></span></a>Subscribe</h3>
+
+<pre><code>{ subscribe: &lt;channel&gt;, filter: &lt;document&gt;, projection: &lt;document&gt; }
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+
+<ul>
+<li>
+<code>channel</code> Required. Must be a string. Channel matching is handled by ZeroMQ's prefix-matching.</li>
+</ul><p>See below for detailed documentation on filters and projections.</p>
+
+<p><strong>Return:</strong></p>
+
+<p><code>{ subscriptionId: &lt;ObjectId&gt; }</code></p>
+
+<p>The subscriptionId (of type ObjectId) returned is used to poll or unsubscribe from the subscription.</p>
+
+<p><strong>Note:</strong></p>
+
+<p>As of now, subscriptionId's are insecure, meaning any client can poll from a subscriptionId once it is issued. Care should be taken that only one client polls from each subscriptionId (however, any number of clients may be polling from the same channel on different subscriptionId's).</p>
+
+<h3>
+<a name="poll" class="anchor" href="#poll"><span class="octicon octicon-link"></span></a>Poll</h3>
+
+<pre><code>{ poll: &lt;subscriptionId(s)&gt;, timeout: &lt;timeout&gt; }
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+
+<ul>
+<li>
+<code>subscriptionId</code> Required. Must be an ObjectId or array of ObjectIds.</li>
+<li>
+<code>timeout</code> Optional. Must be an Int, Long, or Double (Double gets rounded down). Specifies the number of milliseconds to wait on the server if no messages are immediately available. If no timeout is specified, the default is to return immediately.</li>
+</ul><p><strong>Return:</strong></p>
+
+<p>A document of the form:</p>
+
+<pre><code>{
+  messages: { 
+    &lt;subscriptionId1&gt;: {
+        &lt;channelA&gt;: [ &lt;messages&gt; ],
+        &lt;channelB&gt;: [ &lt;messages&gt; ]
+      },
+    &lt;subscriptionId2&gt;: {
+        &lt;channelA&gt;: [ &lt;messages&gt; ],
+        &lt;channelC&gt;: [ &lt;messages&gt; ]
+      }
+  }
+}
+</code></pre>
+
+<p>Therefore, when passing an array of SubscriptionIds, messages are grouped first by SubscriptionId, then by channel (in case the subscription applies to multiple channels due to prefix-matching).</p>
+
+<p><strong>Notes:</strong></p>
+
+<p>In the event that an array is passed and not all array members are ObjectIds, this command will fail and no messages will be received on any subscription.</p>
+
+<p>In the event that an array is passed and an ObjectId is not a valid subscription, an error string will be appended to result.errors[invalid ObjectId].</p>
+
+<h3>
+<a name="unsubscribe" class="anchor" href="#unsubscribe"><span class="octicon octicon-link"></span></a>Unsubscribe</h3>
+
+<pre><code>{ unsubscribe: &lt;subscriptionId(s)&gt; }
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+
+<p><code>subscriptionId</code> Required. Must be an ObjectId or array of ObjectIds.</p>
+
+<p><strong>Return:</strong>
+<code>{ ok: 1 }</code></p>
+
+<p><strong>Notes:</strong></p>
+
+<p>See the notes for the poll command.</p>
+
+<h2>
+<a name="shell-helper" class="anchor" href="#shell-helper"><span class="octicon octicon-link"></span></a>Shell Helper</h2>
+
+<p>Four helper commands for the Mongo shell exist to enable usage of pub/sub. These are accessible through the <code>ps</code> object in the Mongo shell. This object is initialized by running <code>var ps = db.PS()</code> from the shell.</p>
+
+<p>The publish helper is a straightforward wrapper around the server command:</p>
+
+<pre><code>ps.publish(channel, message)
+</code></pre>
+
+<p>The subscribe helper returns a Subscription object which is used to manipulate subscriptions, hiding away the actual SubscriptionId:</p>
+
+<pre><code>ps.subscribe(channel) // returns a Subscription object
+</code></pre>
+
+<p>This Subscription object can then be used to poll in two ways:</p>
+
+<pre><code>subscription.poll([timeout])
+ps.poll([subscription.getId(), ...], [timeout]) // can take a single Id or an array of Ids
+</code></pre>
+
+<p>The Subscription object also provides a forEach method that polls continuously with a 10 second timeout and calls a callback with each response:</p>
+
+<pre><code>subscription.forEach(function(res) { printjson(res); })
+</code></pre>
+
+<p>Similarly, the Subscription object can be used to unsubscribe in two ways:</p>
+
+<pre><code>subscription.unsubscribe()
+ps.unsubscribe([subscription.getId(), ...]) // can also take a single Id or an array of Ids
+</code></pre>
+
+<p>All together, a simple script would look like:</p>
+
+<div class="highlight highlight-javascript"><pre><span class="o">&gt;</span> <span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">PS</span><span class="p">()</span>
+<span class="o">&gt;</span> <span class="kd">var</span> <span class="nx">subscription</span> <span class="o">=</span> <span class="nx">ps</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="nx">channel</span><span class="p">)</span> <span class="c1">// returns a Subscription object</span>
+<span class="o">&gt;</span> <span class="nx">ps</span><span class="p">.</span><span class="nx">publish</span><span class="p">(</span><span class="nx">channel</span><span class="p">,</span> <span class="nx">message</span><span class="p">)</span>
+<span class="o">&gt;</span> <span class="nx">subscription</span><span class="p">.</span><span class="nx">poll</span><span class="p">([</span><span class="nx">timeout</span><span class="p">])</span> <span class="c1">// returns message</span>
+<span class="o">&gt;</span> <span class="nx">subscription</span><span class="p">.</span><span class="nx">unsubscribe</span><span class="p">()</span>
+</pre></div>
+
+<h1>
+<a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h1>
+
+<p>In addition to core pub/sub functionality (publish, subscribe, poll, unsubscribe), this project implements the following features:</p>
+
+<h3>
+<a name="filters" class="anchor" href="#filters"><span class="octicon octicon-link"></span></a>Filters</h3>
+
+<p>Normally, it would be up to some filtering system on the client side to only pass along the interesting documents to the rest of the application. This would not only require each application to build its own filtering logic (or use some third-party library), but would also result in a lot of useless data being transmitted over the network. Since MongoDB already has a powerful and well-known query framework, it makes sense utilize it for applying filters within the pub/sub system.</p>
+
+<p>Filters can be applied to messages on subscriptions in the same way that a query is applied to documents in a collection. The filter is designated through a "filter" field in the subscribe command. For example, the following will return only documents with field <code>a</code> greater than 10.</p>
+
+<pre><code>{ subscribe : &lt;channel&gt;, filter: { $gt : {a : 10} }
+</code></pre>
+
+<p>See <a href="http://docs.mongodb.org/manual/tutorial/query-documents/">here</a> for full documentation on MongoDB query syntax.</p>
+
+<h3>
+<a name="projections" class="anchor" href="#projections"><span class="octicon octicon-link"></span></a>Projections</h3>
+
+<p>Some applications may know before-hand that they only need specific fields in each message. In this case, they can apply a projection to their subscription, specifying which fields to deliver. </p>
+
+<p>A projection is specified using the same syntax as projections on MongoDB queries. The projection is designated through a <code>projection</code> field in the subscribe command. For example, the following will return only the <code>type</code> and <code>author</code> fields in each document:</p>
+
+<pre><code>{ subscribe : &lt;channel&gt;, projection: { type : 1, author : 1 }
+</code></pre>
+
+<p>See <a href="http://docs.mongodb.org/manual/tutorial/project-fields-from-query-results/">here</a> for full documentation on projection syntax.</p>
+
+<p><strong>Note:</strong></p>
+
+<p>Filters and projections can be applied simultaneously:</p>
+
+<pre><code>{ subscribe : &lt;channel&gt;, filter: &lt;document&gt;, projection: &lt;document&gt; }
+</code></pre>
+
+<h3>
+<a name="database-event-notifications" class="anchor" href="#database-event-notifications"><span class="octicon octicon-link"></span></a>Database Event Notifications</h3>
+
+<p>As noted above, one major benefit of having a pub/sub system integrated into MongoDB is the ability to publish database change notifications. The channel <code>$events</code> is reserved within the system and used to publish database event notifications.</p>
+
+<p>To enable database notifications, start a mongodb server with the command line option <code>--setParameter publishDataEvents=1</code>.</p>
+
+<p>While it is possible to subscribe to the events channel manually, the Mongo shell provides convenient helper methods to get notifications on collections or databases:</p>
+
+<pre><code>db.subscribeToChanges([type])
+db.collection.subscribeToChanges([type])
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+
+<p><code>type</code> Optional. Specifies the type of events to be notified of. Valid options are the strings 'insert', 'update', and 'remove'.</p>
+
+<h1>
+<a name="performance" class="anchor" href="#performance"><span class="octicon octicon-link"></span></a>Performance</h1>
+
+<p>Since pub/sub is implemented in MongoDB through the Command interface, the throughput of the pub/sub commands is similar to other database commands.</p>
+
+<p>Below are the commands/second processed by the server under an increasing load of clients. "Light" indicates that the messages being published or polled were about 10 bytes; "heavy" messages were about 400 bytes.</p>
+
+<p><img src="https://raw.githubusercontent.com/10gen-interns/pubsub/master/benchmark.png" alt="alt tag"></p>
+
+<p>These statistics are comparable to other brokered messaging queue systems.</p>
+
+<h1>
+<a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h1>
+
+<ul>
+<li>Use secure connections for internally propagating messages over ZMQ (Curve or SSL)</li>
+<li>Allow for exact matching channels rather than just ZMQ’s prefix matching</li>
+<li>Add secure access to subscriptions</li>
+<li>Internal system to allow synchronized on/off across cluster</li>
+<li>Only propagate messages internally to nodes who are subscribed</li>
+<li>Allow enable/disable of pubsub at runtime</li>
+</ul><h1>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h1>
+
+<p>Most MongoDB source files (src/mongo folder and below) are made available under the terms of the GNU Affero General Public License (AGPL).  See individual files for details.</p>
+
+<p>As an exception, the files in the client/, debian/, rpm/, utils/mongoutils, and all subdirectories thereof are made available under the terms of the Apache License, version 2.0.</p>
+        </section>
+
+        <footer>
+          Pubsub is maintained by <a href="https://github.com/ajgrover">ajgrover</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
